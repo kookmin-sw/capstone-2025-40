@@ -10,7 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 from pathlib import Path
-
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,6 +27,18 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+}
+
 
 # Application definition
 
@@ -37,6 +49,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'AccountsAPP',
+    'QuestAPP',
 ]
 
 MIDDLEWARE = [
@@ -115,7 +130,7 @@ USE_I18N = True
 
 USE_TZ = True
 
-AUTH_USER_MODEL = 'accounts.CustomUser'
+AUTH_USER_MODEL = 'AccountsAPP.CustomUser'
 
 
 # Static files (CSS, JavaScript, Images)
