@@ -33,12 +33,18 @@ from .models import UserQuestAssignment, UserQuestResult
 class UserQuestAssignmentSerializer(serializers.ModelSerializer):
     quest_title = serializers.CharField(source='quest.title')
     quest_description = serializers.CharField(source='quest.description')
-    is_completed = serializers.BooleanField()
+    useCamera = serializers.BooleanField(source='quest.useCamera')
 
     class Meta:
         model = UserQuestAssignment
-        fields = ['id', 'quest_title', 'quest_description', 'assigned_date', 'is_completed']
-
+        fields = [
+            'id',  # assignment_id
+            'quest_title',
+            'quest_description',
+            'useCamera',
+            'is_completed',
+            'assigned_date'
+        ]
 
 
 # 퀘스트 인증용 Serializer
@@ -47,10 +53,5 @@ class UserQuestResultSerializer(serializers.ModelSerializer):
         model = UserQuestResult
         fields = ['photo_url']
 
-    def create(self, validated_data):
-        assignment = self.context['assignment']
-        return UserQuestResult.objects.create(
-            assignment=assignment,
-            photo_url=validated_data['photo_url']
-        )
+
 
