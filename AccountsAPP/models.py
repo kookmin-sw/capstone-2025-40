@@ -27,8 +27,15 @@ class UserQuestAssignment(models.Model):
 
 class UserQuestResult(models.Model):
     assignment = models.OneToOneField(UserQuestAssignment, on_delete=models.CASCADE)
-    photo_url = models.URLField()
+    photo_url = models.URLField(blank=True, null=True)
     completed_at = models.DateTimeField(auto_now_add=True)
+
+
+class Tip(models.Model):
+    text = models.TextField(unique=True)
+
+    def __str__(self):
+        return self.text[:50]  # 앞 50자만 보여줍니다.
 
 
 # 커뮤니티 게시글
