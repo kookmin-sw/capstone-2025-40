@@ -11,21 +11,31 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 from pathlib import Path
 from datetime import timedelta
+import environ
+import os
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# .env 설정
+env = environ.Env(
+    DEBUG=(bool, False)
+)
+
+# BASE_DIR 기준으로 .env 파일 로드
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(gfm_34u&0b#@87)mv83@ee_+@2w&h&%ked*z*+%$fo2+zr2=*' # .env로 옮기기
+SECRET_KEY = env('SECRET_KEY') # .env로 옮기기
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -91,11 +101,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'greenday_db',  # .env로 옮길 예정
-        'USER': 'greenday_admin',  # .env로 옮길 예정
-        'PASSWORD': '202540',  # .env로 옮길 예정
-        'HOST': 'localhost',  # .env로 옮길 예정
-        'PORT': '5432',  # .env로 옮길 예정
+        'NAME': env('DB_NAME'),
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT'),
     }
 }
 
