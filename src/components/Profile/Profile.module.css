@@ -24,14 +24,16 @@
 
 .avatarWrapper {
 	position: relative;
-	width: 120px;
-	height: 120px;
-	display: flex;
-	justify-content: center;
+	width: 120px !important;
+	height: 120px !important;
+	display: flex !important;
+	justify-content: center !important;
 	margin-bottom: 8px;
 }
 
 .avatarButton {
+	width: 100% !important;
+	height: 100% !important;
 	position: relative;
 	padding: 0;
 }
@@ -67,10 +69,10 @@
 	color: #4caf50;
 }
 
-.avatar {
+/* .avatar {
 	width: 100% !important;
 	height: 100% !important;
-}
+} */
 
 .editIcon {
 	position: absolute;

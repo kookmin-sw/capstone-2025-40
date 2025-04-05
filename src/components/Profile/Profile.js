@@ -150,7 +150,7 @@ const Profile = () => {
 				<Paper elevation={3} className={styles.profilePaper}>
 					<Box className={styles.avatarWrapper}>
 						<IconButton component='label' className={styles.avatarButton}>
-							<Avatar src={profileImage} className={styles.avatar} />
+							<Avatar src={profileImage} className={styles.avatar} sx={{height: "100%", width: "100%"}} />
 							<input type='file' hidden accept='image/*' onChange={handleProfileImageChange} />
 							<EditIcon className={styles.avatarEditIcon} fontSize='small' />
 						</IconButton>
