@@ -174,6 +174,13 @@ const PostCreate = () => {
 									}
 									return selected;
 								},
+								MenuProps: {
+									PaperProps: {
+										style: {
+											maxHeight: 200,
+										},
+									},
+								},
 							}}>
 							<MenuItem value='' disabled>
 								시 선택
@@ -199,6 +206,13 @@ const PostCreate = () => {
 										return <span style={{color: "#aaa"}}>군/구 선택</span>;
 									}
 									return selected;
+								},
+								MenuProps: {
+									PaperProps: {
+										style: {
+											maxHeight: 200,
+										},
+									},
 								},
 							}}>
 							<MenuItem value='' disabled>

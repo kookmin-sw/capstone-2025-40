@@ -226,7 +226,16 @@ const Profile = () => {
 							}}
 							label='시'
 							variant='standard'
-							disabled={!isEditingArea}>
+							disabled={!isEditingArea}
+							SelectProps={{
+								MenuProps: {
+									PaperProps: {
+										style: {
+											maxHeight: 200,
+										},
+									},
+								},
+							}}>
 							{area.map((a) => (
 								<MenuItem key={a.name} value={a.name}>
 									{a.name}
@@ -242,7 +251,16 @@ const Profile = () => {
 							onChange={(e) => setDistrict(e.target.value)}
 							label='군/구'
 							variant='standard'
-							disabled={!isEditingArea || !city}>
+							disabled={!isEditingArea || !city}
+							SelectProps={{
+								MenuProps: {
+									PaperProps: {
+										style: {
+											maxHeight: 200,
+										},
+									},
+								},
+							}}>
 							{(area.find((a) => a.name === city)?.subArea || []).map((sub) => (
 								<MenuItem key={sub} value={sub}>
 									{sub}
