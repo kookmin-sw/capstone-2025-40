@@ -41,7 +41,7 @@ const dummyPosts = {
 			image:
 				i % 2 === 0
 					? "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=300&h=200"
-					: "https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=300&h=200",
+					: "https://images.unsplash.com/photo-1506765515384-028b60a970df?auto=format&fit=crop&w=300&h=200",
 			createdAt: new Date(Date.now() - 1000 * 60 * 5 * i),
 			likes: Math.floor(Math.random() * 20),
 			comments: Math.floor(Math.random() * 10),

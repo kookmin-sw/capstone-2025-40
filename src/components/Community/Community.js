@@ -24,14 +24,14 @@ import {useNavigate} from "react-router-dom";
 
 const campaignImages = [
 	"https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=300&h=200",
-	"https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=300&h=200",
-	"https://images.unsplash.com/photo-1508780709619-79562169bc64?auto=format&fit=crop&w=300&h=200",
+	"https://images.unsplash.com/photo-1506765515384-028b60a970df?auto=format&fit=crop&w=300&h=200",
+	"https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?auto=format&fit=crop&w=300&h=200",
 ];
 
 const freeImages = [
-	"https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=300&h=200",
-	"https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=300&h=200",
-	"https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&h=200",
+	"https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=300&h=200",
+	"https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=300&h=200",
+	"https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=300&h=200",
 ];
 
 const infoImages = [
