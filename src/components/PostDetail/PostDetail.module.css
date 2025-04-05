@@ -1,0 +1,222 @@
+.container {
+	display: flex;
+	flex-direction: column;
+	padding: 16px;
+	background-color: #f1f8e9;
+	height: 100vh;
+	box-sizing: border-box;
+}
+
+.header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+
+.scrollableContent {
+	flex: 1;
+	overflow-y: auto;
+	padding-bottom: 35%;
+	margin-bottom: 12px;
+}
+
+.boardTitle {
+	font-weight: bold !important;
+	font-size: 18px !important;
+	color: #388e3c;
+}
+
+.moreButton {
+	color: #888 !important;
+	margin-left: auto !important;
+}
+
+.content {
+	padding: 16px;
+	background: white;
+	border-radius: 12px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+	margin-bottom: 16px !important;
+}
+
+.nickname {
+	font-size: 14px !important;
+	font-weight: bold !important;
+	color: #388e3c !important;
+}
+
+.time {
+	font-size: 12px !important;
+	color: #999 !important;
+}
+
+.title {
+	font-size: 20px !important;
+	font-weight: bold !important;
+	color: #388e3c;
+	margin: 10px 0 !important;
+}
+
+.text {
+	font-size: 14px !important;
+	color: #555 !important;
+	white-space: pre-line !important;
+}
+
+.interaction {
+	display: flex !important;
+	justify-content: space-between; /* 변경: 간격 자동 분배 */
+	padding: 12px 16px !important; /* 좌우 여백 추가 */
+	border-top: 1px solid #c8e6c9;
+	border-bottom: 1px solid #c8e6c9;
+	margin-bottom: 12px;
+}
+
+.iconBox {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	color: #999;
+	margin: 0 10px;
+}
+
+.iconText {
+	font-size: 15px !important;
+	font-weight: bold !important;
+}
+
+.commentSection {
+	flex: 1 !important;
+	/* overflow-y: auto !important; */
+	/* padding-bottom: 35%; */
+}
+
+.commentItem {
+	position: relative;
+	padding: 12px 8px !important;
+	border-bottom: 1px solid #c8e6c9 !important;
+}
+
+.commentActions {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	display: flex;
+	gap: 10px;
+}
+
+.commentActionButton {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	cursor: pointer;
+	font-size: 12px;
+}
+
+.commentNickname {
+	font-size: 12px !important;
+	font-weight: bold !important;
+	color: #388e3c !important;
+}
+
+.commentText {
+	font-size: 14px !important;
+	margin: 6px 0 !important;
+	color: #333 !important;
+}
+
+.commentTime {
+	font-size: 12px !important;
+	color: #888 !important;
+}
+
+.commentInputWrapper {
+	height: 9%;
+	align-self: start;
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	display: flex;
+	gap: 8px;
+	padding: 12px;
+	background-color: #e8f5e9 !important;
+	border-top: 1px solid #c8e6c9;
+	box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.keyboardOpen {
+	height: auto !important; /* 키보드 올라왔을 때 */
+}
+
+.commentInput {
+	flex: 1;
+}
+
+.commentButton {
+	background-color: #66bb6a !important;
+	color: white !important;
+	font-weight: bold !important;
+	height: 40px !important;
+}
+
+/* 대댓글 영역 전체 */
+.replyList {
+	margin-top: 8px;
+	margin-left: 12px;
+	border-left: 2px solid #c8e6c9;
+	padding-left: 12px;
+}
+
+.replyItem {
+	position: relative;
+	padding: 8px 4px;
+	margin-bottom: 6px;
+	background-color: #f9fff8;
+	border-radius: 8px;
+}
+
+.replyNickname {
+	font-weight: bold !important;
+	font-size: 12px !important;
+	color: #388e3c !important;
+}
+
+.replyText {
+	font-size: 14px !important;
+	margin: 6px 0 !important;
+	color: #333;
+}
+
+.replyTime {
+	font-size: 12px !important;
+	color: #888;
+	margin-top: 2px;
+}
+
+.replyActions {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+/* 대댓글 입력창 */
+.replyInputBox {
+	display: flex;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.replyInputBox input {
+	flex: 1;
+}
+
+.replyInputBox button {
+	background-color: #81c784;
+	color: white;
+	font-weight: bold;
+}

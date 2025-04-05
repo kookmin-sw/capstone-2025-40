@@ -1,0 +1,88 @@
+.App {
+	text-align: center;
+}
+
+.App-logo {
+	height: 40vmin;
+	pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.App-logo {
+		animation: App-logo-spin infinite 20s linear;
+	}
+}
+
+.App-header {
+	background-color: #282c34;
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	font-size: calc(10px + 2vmin);
+	color: white;
+}
+
+.App-link {
+	color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* 전체 페이지 컨테이너 */
+/* .page-container {
+	position: relative;
+	width: 100vw;
+	height: 100vh;
+	overflow: hidden;
+} */
+
+/* 각 페이지 스타일 */
+/* .page {
+	position: absolute; 
+	width: 100vw;
+	height: 100vh;
+	background-color: #e8f5e9;
+} */
+
+/* 페이지 전환 애니메이션 */
+/* .page-transition--push-enter {
+	z-index: 1;
+	transform: translateX(100%);
+}
+.page-transition--push-enter-active {
+	transform: translateX(0);
+	transition: transform 300ms;
+}
+.page-transition--push-exit {
+	z-index: 0;
+	transform: translateX(0);
+}
+.page-transition--push-exit-active {
+	transform: translateX(-100%);
+	transition: transform 300ms;
+}
+
+.page-transition--pop-enter {
+	z-index: 1;
+	transform: translateX(-100%);
+}
+.page-transition--pop-enter-active {
+	transform: translateX(0);
+	transition: transform 300ms;
+}
+.page-transition--pop-exit {
+	transform: translateX(0);
+}
+.page-transition--pop-exit-active {
+	transform: translateX(100%);
+	transition: transform 300ms;
+} */

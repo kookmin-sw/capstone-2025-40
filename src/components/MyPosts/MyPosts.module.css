@@ -1,0 +1,68 @@
+.container {
+	display: flex;
+	flex-direction: column;
+	background-color: #f1f8e9;
+	height: 100vh;
+	padding: 16px;
+	box-sizing: border-box;
+}
+
+.header {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+
+.boardTitle {
+	font-weight: bold !important;
+	font-size: 18px !important;
+	color: #388e3c;
+}
+
+.searchBar {
+	flex-shrink: 0;
+	padding: 0 16px 16px;
+	background-color: #f1f8e9;
+}
+
+.scrollWrapper {
+	flex: 1;
+	overflow-y: auto;
+	box-sizing: border-box;
+}
+
+.listWrapper {
+	flex: 1;
+	height: 100%;
+	overflow-y: auto;
+	box-sizing: border-box;
+}
+
+.list {
+	margin-top: 16px !important;
+	display: flex;
+	flex-direction: column;
+	gap: 20px; /* 리스트 항목 간격 */
+}
+
+.paperItem {
+	border-radius: 12px !important;
+}
+
+.listItem {
+	border-bottom: 1px solid #eee;
+}
+
+.textWrapper {
+	max-width: 70%;
+}
+
+.ellipsis {
+	display: block;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100%; /* 또는 적절한 크기 */
+}

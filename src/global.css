@@ -1,0 +1,65 @@
+body,
+* {
+	scrollbar-width: none; /* Firefox */
+	-ms-overflow-style: none; /* IE, Edge */
+}
+
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+	display: none; /* Chrome, Safari, Opera */
+}
+
+html,
+body {
+	height: 100%;
+	overscroll-behavior: none; /* 튕김 방지! */
+}
+
+/* src/index.css */
+.MuiBottomNavigationAction-root.Mui-selected {
+	color: #388e3c !important;
+}
+
+.MuiBottomNavigationAction-root {
+	color: #999999 !important;
+	margin-top: 10px !important;
+}
+
+.MuiBottomNavigation-root {
+	background-color: #e8f5e9 !important;
+	height: 100% !important;
+	align-items: start;
+}
+
+/* global.css 또는 index.css */
+.MuiLinearProgress-bar {
+	background-color: #4caf50 !important; /* 진한 GreenDay 녹색 */
+}
+
+.MuiLinearProgress-root {
+	background-color: #dcedc8 !important; /* 연한 배경색 */
+	border-radius: 5px !important;
+}
+
+.MuiSvgIcon-root {
+	margin: 4px;
+}
+
+.MuiTabs-indicator {
+	background-color: #4caf50 !important; /* GreenDay 색상 */
+}
+
+.MuiPaper-root {
+	box-shadow: none !important;
+	border: solid 1px #4caf50;
+}
+
+.MuiList-root.MuiMenu-list {
+	padding: 0;
+}
+
+.MuiPickersDay-root.Mui-selected {
+	color: #fff !important;
+	background-color: #4caf50 !important;
+	font-weight: 500 !important;
+}

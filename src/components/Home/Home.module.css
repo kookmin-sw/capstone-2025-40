@@ -1,0 +1,79 @@
+.container {
+	/* padding: 20px; */
+	background-color: #f1f8e9; /* 연한 그린톤 */
+	height: 100%;
+	box-sizing: border-box;
+}
+
+.sectionTitle {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	font-size: 20px !important;
+	font-weight: bold !important;
+	color: #2e7d32;
+	margin-bottom: 12px !important;
+}
+
+.progressBox {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 20px;
+}
+
+.progressBar {
+	flex-grow: 1;
+	height: 10px;
+	border-radius: 5px;
+	background-color: #dcedc8;
+}
+
+.progressText {
+	font-weight: bold;
+	color: #4caf50;
+	min-width: 40px;
+}
+
+.challengeList {
+	margin-bottom: 30px;
+}
+
+.challengeItem {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.challengeButton {
+	border-color: #4caf50 !important;
+	color: #4caf50 !important;
+	font-weight: bold !important;
+	margin-left: 30px !important;
+}
+
+.tipTitle {
+	font-weight: bold;
+	margin-top: 24px;
+	color: #2e7d32;
+}
+
+.tipText {
+	font-size: 14px !important;
+	color: #4caf50;
+	margin-top: 8px !important;
+}
+
+.challengeCard {
+	margin-bottom: 20px;
+	padding: 8px 16px;
+	border-radius: 12px !important;
+	background-color: #ffffff;
+}
+
+.tipContainer {
+	margin-top: auto;
+	padding-top: 20px;
+	padding-bottom: 20px;
+	border-top: 1px solid #c8e6c9;
+}
