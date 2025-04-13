@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import UserSignupView, UsernameLoginView, TodayAssignedQuestsView, UserQuestResultCreateView, RandomTipView, \
-    TodayQuestSummaryView
+    TodayQuestSummaryView, ChallengeStatsAPIView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
@@ -11,4 +11,5 @@ urlpatterns = [
     path('my-quests/<int:assignment_id>/complete/', UserQuestResultCreateView.as_view(), name='quest-complete'),
     path('tips/random/', RandomTipView.as_view(), name='random-tip'),
     path('my-quests/today/summary/', TodayQuestSummaryView.as_view(), name='today-quest-summary'),
+    path('my-challenge-stats/', ChallengeStatsAPIView.as_view()),
 ]

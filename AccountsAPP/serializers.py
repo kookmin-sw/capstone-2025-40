@@ -9,11 +9,12 @@ class UserSignupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'email', 'password']
+        fields = ['id', 'username', 'email', 'password', 'name', 'city', 'district']
 
     def create(self, validated_data):
         validated_data['password'] = make_password(validated_data['password'])
         return super().create(validated_data)
+
 
 
 class UsernameLoginSerializer(TokenObtainPairSerializer):

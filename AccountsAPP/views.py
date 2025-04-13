@@ -1,3 +1,5 @@
+from collections import defaultdict
+from django.utils.timezone import now
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -5,7 +7,7 @@ from rest_framework import generics, permissions, status
 from .models import UserQuestAssignment, UserQuestResult, Tip
 from .serializers import UserSignupSerializer, UsernameLoginSerializer, UserQuestAssignmentSerializer, UserQuestResultSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
-from datetime import date
+from datetime import date, timedelta
 
 
 class UserSignupView(APIView):
@@ -107,3 +109,93 @@ class RandomTipView(APIView):
 
         tip = random.choice(tips)
         return Response({"tip": tip.text}, status=status.HTTP_200_OK)
+
+
+class ChallengeStatsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        today = now().date()
+
+        # 오늘의 퀘스트 진행률
+        today_assignments = UserQuestAssignment.objects.filter(user=user, assigned_date=today)
+        today_total = today_assignments.count()
+        today_completed = today_assignments.filter(is_completed=True).count()
+
+        # 최근 7일간 완료 현황
+        last_7_days = [today - timedelta(days=i) for i in range(6, -1, -1)]
+        weekly_data = {d: 0 for d in last_7_days}
+        weekly_assignments = UserQuestAssignment.objects.filter(
+            user=user, is_completed=True, assigned_date__in=last_7_days
+        )
+        for item in weekly_assignments:
+            weekly_data[item.assigned_date] += 1
+        weekly_output = [{"date": d.strftime('%Y-%m-%d'), "count": weekly_data[d]} for d in last_7_days]
+
+        # 최근 4주간 (주차별) 완료 현황
+        start_of_month = today - timedelta(days=28)
+        monthly_assignments = UserQuestAssignment.objects.filter(
+            user=user, is_completed=True,
+            assigned_date__gte=start_of_month, assigned_date__lte=today
+        )
+        weekly_counts = defaultdict(int)
+        for a in monthly_assignments:
+            week_index = ((today - a.assigned_date).days // 7)
+            week_number = 4 - week_index
+            weekly_counts[week_number] += 1
+        monthly_output = [{"week": i, "count": weekly_counts.get(i, 0)} for i in range(1, 5)]
+
+        # 최대 연속 달성 일수 계산
+        completed_days = set(
+            UserQuestAssignment.objects.filter(user=user, is_completed=True)
+            .values_list('assigned_date', flat=True)
+        )
+        max_streak = 0
+        current_streak = 0
+        check_day = today
+        while check_day in completed_days:
+            current_streak += 1
+            check_day -= timedelta(days=1)
+        max_streak = current_streak
+
+        # 전체 완료 날짜 수
+        total_success_days = len(completed_days)
+
+        return Response({
+            "today": {
+                "completed": today_completed,
+                "total": today_total,
+                "progress": int((today_completed / today_total) * 100) if today_total > 0 else 0
+            },
+            "weekly": weekly_output,
+            "monthly": monthly_output,
+            "max_streak": max_streak,
+            "total_success_days": total_success_days
+        })
+
+
+from django.http import JsonResponse
+from django.contrib.auth import get_user_model
+from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
+
+User = get_user_model()
+
+class DuplicateCheckAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        field = request.GET.get('field')
+        value = request.GET.get('value')
+
+        if not field or not value:
+            return JsonResponse({"error": "field와 value를 모두 전달해야 합니다."}, status=400)
+
+        if field not in ['username', 'name', 'email', 'phone_number']:
+            return JsonResponse({"error": "유효하지 않은 필드입니다."}, status=400)
+
+        filter_kwargs = {field: value}
+        exists = User.objects.filter(**filter_kwargs).exists()
+
+        return JsonResponse({"exists": exists})
