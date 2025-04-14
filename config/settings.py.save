@@ -83,6 +83,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 #CORS_ALLOWED_ORIGINS = [
 #    "http://localhost:3000",
 #    "http://greenday-8d0a5.web.app"
+#    "http://
 #]
 
 ROOT_URLCONF = 'config.urls'
