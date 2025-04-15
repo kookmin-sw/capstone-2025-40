@@ -39,35 +39,35 @@ const Challenge = () => {
 		{name: "주민6", score: 64, rank: 14},
 	];
 
+	const fetchStats = async () => {
+		try {
+			setLoading(true);
+			const response = await axiosInstance.get("/users/my-challenge-stats/");
+			const data = response.data;
+
+			setProgress(data.today.progress || 0);
+			setWeekData(
+				data.weekly.map((item) => ({
+					day: new Date(item.date).toLocaleDateString("ko-KR", {weekday: "short"}),
+					value: item.count,
+				}))
+			);
+			setMonthData(
+				data.monthly.map((item) => ({
+					week: `${item.week}주차`,
+					value: item.count,
+				}))
+			);
+			setMaxStreak(data.max_streak || 0);
+			setTotalSuccessDays(data.total_success_days || 0);
+		} catch (error) {
+			console.error("통계 데이터 가져오기 실패:", error);
+		} finally {
+			setLoading(false);
+		}
+	};
+
 	useEffect(() => {
-		const fetchStats = async () => {
-			try {
-				setLoading(true);
-				const response = await axiosInstance.get("/users/my-challenge-stats/");
-				const data = response.data;
-
-				setProgress(data.today.progress || 0);
-				setWeekData(
-					data.weekly.map((item) => ({
-						day: new Date(item.date).toLocaleDateString("ko-KR", {weekday: "short"}),
-						value: item.count,
-					}))
-				);
-				setMonthData(
-					data.monthly.map((item) => ({
-						week: `${item.week}주차`,
-						value: item.count,
-					}))
-				);
-				setMaxStreak(data.max_streak || 0);
-				setTotalSuccessDays(data.total_success_days || 0);
-			} catch (error) {
-				console.error("통계 데이터 가져오기 실패:", error);
-			} finally {
-				setLoading(false);
-			}
-		};
-
 		fetchStats();
 	}, []);
 
@@ -79,10 +79,9 @@ const Challenge = () => {
 
 	const handleRefresh = () => {
 		return new Promise((resolve) => {
-			setTimeout(() => {
-				setRefreshKey((prev) => prev + 1); // 다시 렌더링
-				resolve();
-			}, 1000);
+			fetchStats().then(() => {
+				setTimeout(resolve, 500);
+			});
 		});
 	};
 
