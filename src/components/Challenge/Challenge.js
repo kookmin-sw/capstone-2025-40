@@ -134,7 +134,7 @@ const Challenge = () => {
 							<ResponsiveContainer width='100%' height={150}>
 								<BarChart data={[{name: "연속", value: maxStreak}]}>
 									<XAxis dataKey='name' hide />
-									<YAxis hide domain={[0, 50]} />
+									<YAxis hide domain={[0, Math.max(10, maxStreak + 2)]} />
 									<Tooltip formatter={(value) => [`${value}개`, "달성 수"]} />
 									<Bar dataKey='value' fill='#66bb6a' barSize={30} radius={[6, 6, 0, 0]}>
 										<LabelList dataKey='value' position='top' />
@@ -149,7 +149,7 @@ const Challenge = () => {
 							<ResponsiveContainer width='100%' height={150}>
 								<BarChart data={[{name: "전체", value: totalSuccessDays}]}>
 									<XAxis dataKey='name' hide />
-									<YAxis hide domain={[0, 50]} />
+									<YAxis hide domain={[0, Math.max(10, totalSuccessDays + 5)]} />
 									<Tooltip formatter={(value) => [`${value}개`, "달성 수"]} />
 									<Bar dataKey='value' fill='#66bb6a' barSize={30} radius={[6, 6, 0, 0]}>
 										<LabelList dataKey='value' position='top' />
