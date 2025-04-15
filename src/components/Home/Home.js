@@ -124,7 +124,7 @@ const Home = () => {
 			</Box>
 
 			{challengeLoading ? (
-				<Box display='flex' justifyContent='center'>
+				<Box display='flex' justifyContent='center' alignItems='center'>
 					<CircularProgress color='success' />
 				</Box>
 			) : (
