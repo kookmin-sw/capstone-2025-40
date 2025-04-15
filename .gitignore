@@ -27,3 +27,6 @@ coverage/
 
 # Others
 *.local
+
+# settings.js file
+/src/settings.js

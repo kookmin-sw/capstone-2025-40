@@ -2,15 +2,21 @@ import React, {useState} from "react";
 import {Box, Button, TextField, Typography, InputAdornment, IconButton} from "@mui/material";
 import {Visibility, VisibilityOff} from "@mui/icons-material";
 import {useNavigate} from "react-router-dom";
+import {useDispatch} from "react-redux";
+import {signup} from "../../redux/slices/authSlice";
+import {area} from "../../area";
+import MenuItem from "@mui/material/MenuItem";
 import styles from "./Signup.module.css";
 
 const Signup = () => {
 	const navigate = useNavigate();
+	const dispatch = useDispatch();
 
 	// 입력 상태
 	const [userid, setUserid] = useState("");
 	const [username, setUsername] = useState("");
 	const [nickname, setNickname] = useState("");
+	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [city, setCity] = useState("");
@@ -30,6 +36,8 @@ const Signup = () => {
 		if (!userid.trim()) newErrors.userid = "아이디를 입력해주세요.";
 		if (!username.trim()) newErrors.username = "이름을 입력해주세요.";
 		if (!nickname.trim()) newErrors.nickname = "닉네임을 입력해주세요.";
+		if (!email.trim()) newErrors.email = "이메일을 입력해주세요.";
+		else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) newErrors.email = "이메일 형식이 알맞지 않습니다.";
 		if (!password.trim()) newErrors.password = "비밀번호를 입력해주세요.";
 		if (!confirmPassword.trim()) newErrors.confirmPassword = "비밀번호 확인을 입력해주세요.";
 		if (password !== confirmPassword) newErrors.confirmPassword = "비밀번호가 일치하지 않습니다.";
@@ -39,8 +47,21 @@ const Signup = () => {
 		setErrors(newErrors);
 
 		if (Object.keys(newErrors).length === 0) {
-			console.log("회원가입 정보:", {userid, nickname, password, city, district});
-			// 실제 회원가입 처리
+			const formData = {
+				username: userid,
+				email,
+				password,
+				name: username,
+				// city,
+				// district,
+			};
+			dispatch(signup(formData))
+				.unwrap()
+				.then(() => {
+					alert("회원가입이 완료되었습니다.");
+					navigate("/login");
+				})
+				.catch((err) => alert("회원가입에 실패했습니다. 다시 시도해주세요."));
 		}
 	};
 
@@ -87,6 +108,19 @@ const Signup = () => {
 				onChange={(e) => setNickname(e.target.value)}
 				error={!!errors.nickname}
 				helperText={errors.nickname}
+			/>
+
+			<TextField
+				className={styles.textField}
+				label='이메일'
+				variant='standard'
+				color='success'
+				margin='normal'
+				fullWidth
+				value={email}
+				onChange={(e) => setEmail(e.target.value)}
+				error={!!errors.email}
+				helperText={errors.email}
 			/>
 
 			<TextField
@@ -142,20 +176,44 @@ const Signup = () => {
 			{/* 거주지 수평 정렬 */}
 			<Box className={styles.locationContainer}>
 				<TextField
+					select
 					className={styles.locationField}
-					label='거주지 (시)'
+					// label='거주지 (시)'
 					variant='standard'
 					color='success'
 					margin='normal'
 					fullWidth
 					value={city}
-					onChange={(e) => setCity(e.target.value)}
+					onChange={(e) => {
+						setCity(e.target.value);
+						setDistrict("");
+					}}
 					error={!!errors.city}
 					helperText={errors.city}
-				/>
+					SelectProps={{
+						displayEmpty: true,
+						MenuProps: {
+							PaperProps: {
+								style: {
+									maxHeight: 200,
+								},
+							},
+						},
+					}}>
+					<MenuItem value='' disabled>
+						시 선택
+					</MenuItem>
+					{area.map((a) => (
+						<MenuItem key={a.name} value={a.name}>
+							{a.name}
+						</MenuItem>
+					))}
+				</TextField>
+
 				<TextField
+					select
 					className={styles.locationField}
-					label='거주지 (구)'
+					// label='거주지 (구)'
 					variant='standard'
 					color='success'
 					margin='normal'
@@ -164,7 +222,26 @@ const Signup = () => {
 					onChange={(e) => setDistrict(e.target.value)}
 					error={!!errors.district}
 					helperText={errors.district}
-				/>
+					disabled={!city}
+					SelectProps={{
+						displayEmpty: true,
+						MenuProps: {
+							PaperProps: {
+								style: {
+									maxHeight: 200,
+								},
+							},
+						},
+					}}>
+					<MenuItem value='' disabled>
+						군/구 선택
+					</MenuItem>
+					{(area.find((a) => a.name === city)?.subArea || []).map((sub) => (
+						<MenuItem key={sub} value={sub}>
+							{sub}
+						</MenuItem>
+					))}
+				</TextField>
 			</Box>
 
 			<Button className={styles.signupButton} fullWidth onClick={handleSubmit}>

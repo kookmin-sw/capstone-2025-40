@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useState, useEffect} from "react";
 import {Box, Typography, LinearProgress} from "@mui/material";
 import styles from "./Challenge.module.css";
 import {LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, LabelList} from "recharts";
@@ -6,49 +6,70 @@ import ChallengeModal from "./ChallengeModal";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import PullToRefresh from "../PullToRefresh/PullToRefresh";
-
-const weekData = [
-	{day: "월", value: 2},
-	{day: "화", value: 4},
-	{day: "수", value: 1},
-	{day: "목", value: 3},
-	{day: "금", value: 5},
-	{day: "토", value: 2},
-	{day: "일", value: 4},
-];
-
-const monthData = [
-	{week: "1주차", value: 12},
-	{week: "2주차", value: 15},
-	{week: "3주차", value: 8},
-	{week: "4주차", value: 10},
-];
-
-const personalRankData = [
-	{name: "사용자A", score: 65, rank: 1},
-	{name: "사용자B", score: 63, rank: 2},
-	{name: "사용자C", score: 62, rank: 3},
-	{name: "나", score: 60, rank: 4},
-	{name: "사용자E", score: 58, rank: 5},
-	{name: "사용자F", score: 57, rank: 6},
-	{name: "사용자G", score: 56, rank: 7},
-];
-
-const localRankData = [
-	{name: "주민1", score: 72, rank: 9},
-	{name: "주민2", score: 71, rank: 10},
-	{name: "주민3", score: 69, rank: 11},
-	{name: "나", score: 67, rank: 12},
-	{name: "주민5", score: 65, rank: 13},
-	{name: "주민6", score: 64, rank: 14},
-];
+import axiosInstance from "../../axiosInstance";
 
 const Challenge = () => {
-	const [progress] = useState(60);
+	const [progress, setProgress] = useState(0);
+	const [weekData, setWeekData] = useState([]);
+	const [monthData, setMonthData] = useState([]);
+	const [maxStreak, setMaxStreak] = useState(0);
+	const [totalSuccessDays, setTotalSuccessDays] = useState(0);
+	const [loading, setLoading] = useState(true);
 	const [modalOpen, setModalOpen] = useState(false);
 	const [modalTitle, setModalTitle] = useState("");
 	const [selectedRankData, setSelectedRankData] = useState([]);
 	const [refreshKey, setRefreshKey] = useState(0);
+
+	const personalRankData = [
+		{name: "사용자A", score: 65, rank: 1},
+		{name: "사용자B", score: 63, rank: 2},
+		{name: "사용자C", score: 62, rank: 3},
+		{name: "나", score: 60, rank: 4},
+		{name: "사용자E", score: 58, rank: 5},
+		{name: "사용자F", score: 57, rank: 6},
+		{name: "사용자G", score: 56, rank: 7},
+	];
+
+	const localRankData = [
+		{name: "주민1", score: 72, rank: 9},
+		{name: "주민2", score: 71, rank: 10},
+		{name: "주민3", score: 69, rank: 11},
+		{name: "나", score: 67, rank: 12},
+		{name: "주민5", score: 65, rank: 13},
+		{name: "주민6", score: 64, rank: 14},
+	];
+
+	useEffect(() => {
+		const fetchStats = async () => {
+			try {
+				setLoading(true);
+				const response = await axiosInstance.get("/users/my-challenge-stats/");
+				const data = response.data;
+
+				setProgress(data.today.progress || 0);
+				setWeekData(
+					data.weekly.map((item) => ({
+						day: new Date(item.date).toLocaleDateString("ko-KR", {weekday: "short"}),
+						value: item.count,
+					}))
+				);
+				setMonthData(
+					data.monthly.map((item) => ({
+						week: `${item.week}주차`,
+						value: item.count,
+					}))
+				);
+				setMaxStreak(data.max_streak || 0);
+				setTotalSuccessDays(data.total_success_days || 0);
+			} catch (error) {
+				console.error("통계 데이터 가져오기 실패:", error);
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		fetchStats();
+	}, []);
 
 	const openModal = (title, data) => {
 		setModalTitle(title);
@@ -111,7 +132,7 @@ const Challenge = () => {
 						<Box className={styles.barItem}>
 							<Typography className={styles.barTitle}>최대 연속 일수</Typography>
 							<ResponsiveContainer width='100%' height={150}>
-								<BarChart data={[{name: "연속", value: 15}]}>
+								<BarChart data={[{name: "연속", value: maxStreak}]}>
 									<XAxis dataKey='name' hide />
 									<YAxis hide domain={[0, 50]} />
 									<Tooltip formatter={(value) => [`${value}개`, "달성 수"]} />
@@ -126,7 +147,7 @@ const Challenge = () => {
 						<Box className={styles.barItem}>
 							<Typography className={styles.barTitle}>전체 달성 일수</Typography>
 							<ResponsiveContainer width='100%' height={150}>
-								<BarChart data={[{name: "전체", value: 40}]}>
+								<BarChart data={[{name: "전체", value: totalSuccessDays}]}>
 									<XAxis dataKey='name' hide />
 									<YAxis hide domain={[0, 50]} />
 									<Tooltip formatter={(value) => [`${value}개`, "달성 수"]} />

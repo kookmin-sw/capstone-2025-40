@@ -53,7 +53,7 @@ const posts = {
 		return {
 			id: i + 1,
 			noticeBoard: "캠페인 게시판",
-			writer: `익명${i + 1}`,
+			writer: `홍길동`,
 			title: `그린 캠페인 ${i + 1}차 모집`,
 			content: `참여만 해도 상품이 제공됩니다. \n참여하실 분은 댓글 남겨주세요.`,
 			image: campaignImages[Math.floor(Math.random() * campaignImages.length)],

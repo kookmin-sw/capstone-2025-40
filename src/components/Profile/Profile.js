@@ -1,4 +1,6 @@
 import React, {useState, useEffect, useRef} from "react";
+import {useDispatch} from "react-redux";
+import {logout} from "../../redux/slices/authSlice";
 import {
 	Box,
 	Typography,
@@ -61,6 +63,7 @@ const Profile = () => {
 	const [city, setCity] = useState("서울");
 	const [district, setDistrict] = useState("성북구");
 	const [isEditingArea, setIsEditingArea] = useState(false);
+	const dispatch = useDispatch();
 
 	// 모달 상태
 	const [openPasswordModal, setOpenPasswordModal] = useState(false);
@@ -141,6 +144,14 @@ const Profile = () => {
 		setPassword("");
 		setConfirmPassword("");
 		setOpenPasswordModal(false);
+	};
+
+	const handleLogout = () => {
+		const confirmLogout = window.confirm("로그아웃 하시겠습니까?");
+		if (confirmLogout) {
+			dispatch(logout());
+			navigate("/login");
+		}
 	};
 
 	return (
@@ -311,6 +322,9 @@ const Profile = () => {
 					<Divider />
 					<ListItemButton sx={{padding: "10px 0"}} onClick={() => setOpenEmailModal(true)}>
 						이메일 설정
+					</ListItemButton>
+					<ListItemButton sx={{padding: "10px 0"}} onClick={handleLogout}>
+						로그아웃
 					</ListItemButton>
 				</List>
 			</Box>

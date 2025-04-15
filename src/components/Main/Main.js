@@ -1,6 +1,7 @@
 import React from "react";
 import {Box, AppBar, Toolbar, Typography, BottomNavigation, BottomNavigationAction} from "@mui/material";
 import {useNavigate, useLocation, Routes, Route} from "react-router-dom";
+import {useDispatch} from "react-redux";
 import HomeIcon from "@mui/icons-material/Home";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import ForumIcon from "@mui/icons-material/Forum";
@@ -18,6 +19,8 @@ const Main = () => {
 	const location = useLocation();
 
 	const currentPath = location.pathname.replace("/main/", "") || "home";
+
+	const dispatch = useDispatch();
 
 	const navActionStyle = {
 		icon: {fontSize: 20}, // 아이콘 사이즈
@@ -41,7 +44,7 @@ const Main = () => {
 
 	const renderRightIcon = () => {
 		if (currentPath === "community") {
-			return <PortraitOutlinedIcon sx={{ml: "auto", cursor: "pointer"}} onClick={() => navigate("/myposts")} />;
+			return <PortraitOutlinedIcon sx={{cursor: "pointer"}} onClick={() => navigate("/myposts")} />;
 		}
 		return null;
 	};
@@ -54,7 +57,7 @@ const Main = () => {
 					<Typography variant='h6' className={styles.title}>
 						{renderTitle()}
 					</Typography>
-					{renderRightIcon()}
+					<Box sx={{display: "flex", ml: "auto", alignItems: "center", gap: 1}}>{renderRightIcon()}</Box>
 				</Toolbar>
 			</AppBar>
 

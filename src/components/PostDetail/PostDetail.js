@@ -54,14 +54,14 @@ const PostDetail = () => {
 	const [comments, setComments] = useState([
 		{
 			id: 1,
-			nickname: "익명1",
+			nickname: "채주원",
 			likes: 3,
 			text: "제가 참여하겠습니다!",
 			timestamp: new Date(),
 			replies: [
 				{
 					id: 11,
-					nickname: "익명 (글쓴이)",
+					nickname: "홍길동 (글쓴이)",
 					likes: 3,
 					text: "감사합니다!",
 					timestamp: new Date(),
@@ -70,7 +70,7 @@ const PostDetail = () => {
 		},
 		{
 			id: 2,
-			nickname: "익명2",
+			nickname: "성창민",
 			likes: 2,
 			text: "저도 참여할래요!!",
 			timestamp: new Date(),
@@ -78,7 +78,7 @@ const PostDetail = () => {
 		},
 		{
 			id: 3,
-			nickname: "익명2",
+			nickname: "정하람",
 			likes: 0,
 			text: "저도 참여할래요!!",
 			timestamp: new Date(),
@@ -86,16 +86,8 @@ const PostDetail = () => {
 		},
 		{
 			id: 4,
-			nickname: "익명2",
+			nickname: "박상엄",
 			likes: 0,
-			text: "저도 참여할래요!!",
-			timestamp: new Date(),
-			replies: [],
-		},
-		{
-			id: 5,
-			nickname: "익명2",
-			likes: 5,
 			text: "저도 참여할래요!!",
 			timestamp: new Date(),
 			replies: [],
@@ -189,7 +181,7 @@ const PostDetail = () => {
 
 		const newEntry = {
 			id: Date.now(),
-			nickname: "익명",
+			nickname: "홍길동",
 			text: inputValue,
 			timestamp: new Date(),
 			likes: 0,

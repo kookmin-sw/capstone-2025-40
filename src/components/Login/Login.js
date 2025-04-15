@@ -1,4 +1,4 @@
-import React, {useState, useRef} from "react";
+import React, {useState, useRef, useEffect} from "react";
 import {
 	Box,
 	Button,
@@ -8,13 +8,18 @@ import {
 	FormControlLabel,
 	InputAdornment,
 	IconButton,
+	CircularProgress,
 } from "@mui/material";
 import {Visibility, VisibilityOff} from "@mui/icons-material";
 import {useNavigate} from "react-router-dom";
+import {useDispatch, useSelector} from "react-redux";
+import {login} from "../../redux/slices/authSlice";
 import styles from "./Login.module.css";
 
 const Login = () => {
 	const navigate = useNavigate();
+	const dispatch = useDispatch();
+	const {loading, error} = useSelector((state) => state.auth);
 	const [autoLogin, setAutoLogin] = useState(false);
 	const [showPassword, setShowPassword] = useState(false);
 	const [username, setUsername] = useState(""); // 아이디
@@ -22,6 +27,14 @@ const Login = () => {
 	const [usernameError, setUsernameError] = useState(false);
 	const [passwordError, setPasswordError] = useState(false);
 	const passwordRef = useRef(null);
+
+	useEffect(() => {
+		const autoLoginFlag = localStorage.getItem("autoLogin");
+		const userData = localStorage.getItem("user");
+		if (autoLoginFlag && userData) {
+			navigate("/main/home");
+		}
+	}, []);
 
 	const handleTogglePassword = () => {
 		setShowPassword((prev) => !prev);
@@ -44,9 +57,17 @@ const Login = () => {
 		}
 
 		if (!hasError) {
-			// 로그인 로직 실행
-			console.log("로그인 시도:", {username, password});
-			navigate("/main/home");
+			dispatch(login({username, password}))
+				.unwrap()
+				.then((res) => {
+					console.log("로그인 응답:", res);
+					localStorage.setItem("user", JSON.stringify(res));
+					if (autoLogin) {
+						localStorage.setItem("autoLogin", "true");
+					}
+					navigate("/main/home");
+				})
+				.catch((err) => alert("로그인에 실패했습니다. 다시 시도해주세요."));
 		}
 	};
 
@@ -109,9 +130,15 @@ const Login = () => {
 				control={<Checkbox checked={autoLogin} onChange={(e) => setAutoLogin(e.target.checked)} color='success' />}
 				label='자동 로그인'
 			/>
-			<Button className={styles.loginButton} fullWidth onClick={handleLogin}>
-				로그인
-			</Button>
+			{loading ? (
+				<Button className={styles.loginButton} fullWidth disabled>
+					<CircularProgress size={24} color='success' />
+				</Button>
+			) : (
+				<Button className={styles.loginButton} fullWidth onClick={handleLogin}>
+					로그인
+				</Button>
+			)}
 			<Box className={styles.findBox}>
 				<Typography className={styles.signupText} onClick={() => navigate("/find-id")}>
 					아이디 찾기
