@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from "react";
-import {Box, Typography, LinearProgress} from "@mui/material";
+import {Box, Typography, LinearProgress, CircularProgress} from "@mui/material";
 import styles from "./Challenge.module.css";
 import {LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, LabelList} from "recharts";
 import ChallengeModal from "./ChallengeModal";
@@ -99,28 +99,40 @@ const Challenge = () => {
 						<Typography variant='subtitle1' className={styles.sectionTitle}>
 							<TrendingUpIcon fontSize='small' /> 주간 현황
 						</Typography>
-						<ResponsiveContainer width='100%' height={200}>
-							<LineChart data={weekData}>
-								<XAxis dataKey='day' />
-								<YAxis />
-								<Tooltip formatter={(value) => [`${value}개`, "달성 수"]} />
-								<Line type='monotone' dataKey='value' stroke='#66bb6a' strokeWidth={3} />
-							</LineChart>
-						</ResponsiveContainer>
+						{loading ? (
+							<Box display='flex' justifyContent='center' alignItems='center' height={200}>
+								<CircularProgress color='success' />
+							</Box>
+						) : (
+							<ResponsiveContainer width='100%' height={200}>
+								<LineChart data={weekData}>
+									<XAxis dataKey='day' />
+									<YAxis />
+									<Tooltip formatter={(value) => [`${value}개`, "달성 수"]} />
+									<Line type='monotone' dataKey='value' stroke='#66bb6a' strokeWidth={3} />
+								</LineChart>
+							</ResponsiveContainer>
+						)}
 					</Box>
 
 					<Box className={styles.chartContainer}>
 						<Typography variant='subtitle1' className={styles.sectionTitle}>
 							<CalendarTodayIcon fontSize='small' /> 월간 현황
 						</Typography>
-						<ResponsiveContainer width='100%' height={200}>
-							<LineChart data={monthData}>
-								<XAxis dataKey='week' />
-								<YAxis />
-								<Tooltip formatter={(value) => [`${value}개`, "달성 수"]} />
-								<Line type='monotone' dataKey='value' stroke='#43a047' strokeWidth={3} />
-							</LineChart>
-						</ResponsiveContainer>
+						{loading ? (
+							<Box display='flex' justifyContent='center' alignItems='center' height={200}>
+								<CircularProgress color='success' />
+							</Box>
+						) : (
+							<ResponsiveContainer width='100%' height={200}>
+								<LineChart data={monthData}>
+									<XAxis dataKey='week' />
+									<YAxis />
+									<Tooltip formatter={(value) => [`${value}개`, "달성 수"]} />
+									<Line type='monotone' dataKey='value' stroke='#43a047' strokeWidth={3} />
+								</LineChart>
+							</ResponsiveContainer>
+						)}
 					</Box>
 				</Box>
 
@@ -130,31 +142,43 @@ const Challenge = () => {
 						{/* 최대 연속 일수 */}
 						<Box className={styles.barItem}>
 							<Typography className={styles.barTitle}>최대 연속 일수</Typography>
-							<ResponsiveContainer width='100%' height={150}>
-								<BarChart data={[{name: "연속", value: maxStreak}]}>
-									<XAxis dataKey='name' hide />
-									<YAxis hide domain={[0, Math.max(10, maxStreak + 2)]} />
-									<Tooltip formatter={(value) => [`${value}개`, "달성 수"]} />
-									<Bar dataKey='value' fill='#66bb6a' barSize={30} radius={[6, 6, 0, 0]}>
-										<LabelList dataKey='value' position='top' />
-									</Bar>
-								</BarChart>
-							</ResponsiveContainer>
+							{loading ? (
+								<Box display='flex' justifyContent='center' alignItems='center' height={150}>
+									<CircularProgress color='success' />
+								</Box>
+							) : (
+								<ResponsiveContainer width='100%' height={150}>
+									<BarChart data={[{name: "연속", value: maxStreak}]}>
+										<XAxis dataKey='name' hide />
+										<YAxis hide domain={[0, Math.max(10, maxStreak + 2)]} />
+										<Tooltip formatter={(value) => [`${value}개`, "달성 수"]} />
+										<Bar dataKey='value' fill='#66bb6a' barSize={30} radius={[6, 6, 0, 0]}>
+											<LabelList dataKey='value' position='top' />
+										</Bar>
+									</BarChart>
+								</ResponsiveContainer>
+							)}
 						</Box>
 
 						{/* 전체 달성 일수 */}
 						<Box className={styles.barItem}>
 							<Typography className={styles.barTitle}>전체 달성 일수</Typography>
-							<ResponsiveContainer width='100%' height={150}>
-								<BarChart data={[{name: "전체", value: totalSuccessDays}]}>
-									<XAxis dataKey='name' hide />
-									<YAxis hide domain={[0, Math.max(10, totalSuccessDays + 5)]} />
-									<Tooltip formatter={(value) => [`${value}개`, "달성 수"]} />
-									<Bar dataKey='value' fill='#66bb6a' barSize={30} radius={[6, 6, 0, 0]}>
-										<LabelList dataKey='value' position='top' />
-									</Bar>
-								</BarChart>
-							</ResponsiveContainer>
+							{loading ? (
+								<Box display='flex' justifyContent='center' alignItems='center' height={150}>
+									<CircularProgress color='success' />
+								</Box>
+							) : (
+								<ResponsiveContainer width='100%' height={150}>
+									<BarChart data={[{name: "전체", value: totalSuccessDays}]}>
+										<XAxis dataKey='name' hide />
+										<YAxis hide domain={[0, Math.max(10, totalSuccessDays + 5)]} />
+										<Tooltip formatter={(value) => [`${value}개`, "달성 수"]} />
+										<Bar dataKey='value' fill='#66bb6a' barSize={30} radius={[6, 6, 0, 0]}>
+											<LabelList dataKey='value' position='top' />
+										</Bar>
+									</BarChart>
+								</ResponsiveContainer>
+							)}
 						</Box>
 					</Box>
 				</Box>
