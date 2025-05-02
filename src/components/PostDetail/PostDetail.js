@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect} from "react";
+import React, {useState, useRef, useEffect, useMemo} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
 import {Box, Typography, IconButton, TextField, Button, Menu, MenuItem} from "@mui/material";
 import Snackbar from "@mui/material/Snackbar";
@@ -14,6 +14,12 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import styles from "./PostDetail.module.css";
 import PullToRefresh from "../PullToRefresh/PullToRefresh";
+
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import CloseIcon from "@mui/icons-material/Close";
 
 const formatTime = (createdAt) => {
 	const now = new Date();
@@ -46,6 +52,22 @@ const PostDetail = () => {
 	const navigate = useNavigate();
 	const {state} = useLocation();
 	const post = state?.post;
+
+	const badgeMap = {
+		100: "https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge100.png?alt=media&token=8f125eb9-814f-4300-809c-1ab75049d7ee",
+		300: "https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge300.png?alt=media&token=6ee0120a-00b2-460a-9953-735bed462802",
+		500: "https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge500.png?alt=media&token=d176caa3-6c0f-4211-9412-9e32fe5e9e20",
+	};
+
+	const getRandomBadge = () => {
+		const badgeKeys = [100, 300, 500];
+		const randomKey = badgeKeys[Math.floor(Math.random() * badgeKeys.length)];
+		return badgeMap[randomKey];
+	};
+
+	const writerBadge = useMemo(getRandomBadge, []);
+	// 댓글/대댓글별 뱃지 매핑 state
+	const [commentBadgeMap, setCommentBadgeMap] = useState({});
 	const isInitialMount = useRef(true);
 	const [hasNewComment, setHasNewComment] = useState(false);
 	const scrollableContentRef = useRef(null);
@@ -115,6 +137,20 @@ const PostDetail = () => {
 	const [snackbarOpen, setSnackbarOpen] = useState(false);
 	const isMyPost = state?.fromMyPosts === true;
 
+	// 이미지 미리보기 모달 상태
+	const [previewOpen, setPreviewOpen] = useState(false);
+	const [previewImage, setPreviewImage] = useState("");
+
+	const handlePreview = (imgUrl) => {
+		setPreviewImage(imgUrl);
+		setPreviewOpen(true);
+	};
+
+	const handleClosePreview = () => {
+		setPreviewOpen(false);
+		setPreviewImage("");
+	};
+
 	useEffect(() => {
 		if (replyTargetId !== null) {
 			const el = textAreaDomRef.current;
@@ -162,6 +198,17 @@ const PostDetail = () => {
 			el.removeEventListener("blur", handleBlur);
 		};
 	}, [textAreaDomRef.current]);
+
+	// 댓글/대댓글별 뱃지 매핑 초기화
+	useEffect(() => {
+		const allCommentIds = comments.flatMap((comment) => [comment.id, ...(comment.replies?.map((r) => r.id) ?? [])]);
+		const initialBadgeMap = {};
+		allCommentIds.forEach((id) => {
+			initialBadgeMap[id] = getRandomBadge();
+		});
+		setCommentBadgeMap(initialBadgeMap);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	if (!post) return <Typography>게시글 정보를 찾을 수 없습니다.</Typography>;
 
@@ -361,14 +408,24 @@ const PostDetail = () => {
 								src='/default-profile.png'
 								alt='작성자 프로필'
 								style={{
-									width: 32,
-									height: 32,
+									width: 48,
+									height: 48,
 									borderRadius: "50%",
 									objectFit: "cover",
+									cursor: "pointer",
 								}}
+								onClick={() => handlePreview("/default-profile.png")}
 							/>
 							<Box>
-								<Typography className={styles.nickname}>{post.writer}</Typography>
+								<Box display='flex' alignItems='center' gap={1}>
+									<Typography className={styles.nickname}>{post.writer}</Typography>
+									<img
+										src={writerBadge}
+										alt='뱃지'
+										style={{width: 36, height: 36, cursor: "pointer"}}
+										onClick={() => handlePreview(writerBadge)}
+									/>
+								</Box>
 								<Typography className={styles.time}>{formatTime(post.createdAt)}</Typography>
 							</Box>
 						</Box>
@@ -401,7 +458,9 @@ const PostDetail = () => {
 										height: "auto",
 										marginTop: "12px",
 										borderRadius: "12px",
+										cursor: "pointer",
 									}}
+									onClick={() => handlePreview(post.image)}
 								/>
 							</Box>
 						)}
@@ -491,14 +550,24 @@ const PostDetail = () => {
 										src='/default-profile.png'
 										alt='댓글 프로필'
 										style={{
-											width: 20,
-											height: 20,
+											width: 32,
+											height: 32,
 											borderRadius: "50%",
 											objectFit: "cover",
+											cursor: "pointer",
 										}}
+										onClick={() => handlePreview("/default-profile.png")}
 									/>
 									<Box>
-										<Typography className={styles.commentNickname}>{comment.nickname}</Typography>
+										<Box display='flex' alignItems='center' gap={1}>
+											<Typography className={styles.commentNickname}>{comment.nickname}</Typography>
+											<img
+												src={commentBadgeMap[comment.id]}
+												alt='뱃지'
+												style={{width: 32, height: 32, cursor: "pointer"}}
+												onClick={() => handlePreview(commentBadgeMap[comment.id])}
+											/>
+										</Box>
 									</Box>
 								</Box>
 
@@ -542,14 +611,24 @@ const PostDetail = () => {
 														src='/default-profile.png'
 														alt='대댓글 프로필'
 														style={{
-															width: 20,
-															height: 20,
+															width: 32,
+															height: 32,
 															borderRadius: "50%",
 															objectFit: "cover",
+															cursor: "pointer",
 														}}
+														onClick={() => handlePreview("/default-profile.png")}
 													/>
 													<Box>
-														<Typography className={styles.replyNickname}>{reply.nickname}</Typography>
+														<Box display='flex' alignItems='center' gap={1}>
+															<Typography className={styles.replyNickname}>{reply.nickname}</Typography>
+															<img
+																src={commentBadgeMap[reply.id]}
+																alt='뱃지'
+																style={{width: 32, height: 32, cursor: "pointer"}}
+																onClick={() => handlePreview(commentBadgeMap[reply.id])}
+															/>
+														</Box>
 													</Box>
 												</Box>
 												<Typography className={styles.replyText}>{reply.text}</Typography>
@@ -609,6 +688,16 @@ const PostDetail = () => {
 				anchorOrigin={{vertical: "top", horizontal: "center"}}
 				sx={{top: "70px"}}
 			/>
+			<Dialog open={previewOpen} onClose={handleClosePreview}>
+				<Box display='flex' justifyContent='flex-end' p={1}>
+					<IconButton onClick={handleClosePreview} size='small'>
+						<CloseIcon />
+					</IconButton>
+				</Box>
+				<DialogContent>
+					<img src={previewImage} alt='미리보기' style={{width: "100%", height: "auto"}} />
+				</DialogContent>
+			</Dialog>
 		</Box>
 	);
 };

@@ -16,6 +16,10 @@ import {
 	Paper,
 	Modal,
 	MenuItem,
+	Dialog,
+	DialogTitle,
+	DialogContent,
+	Grid,
 } from "@mui/material";
 import {AdapterDateFns} from "@mui/x-date-pickers/AdapterDateFns";
 import {LocalizationProvider} from "@mui/x-date-pickers";
@@ -68,6 +72,54 @@ const Profile = () => {
 	// 모달 상태
 	const [openPasswordModal, setOpenPasswordModal] = useState(false);
 	const [openEmailModal, setOpenEmailModal] = useState(false);
+
+	const [selectedBadge, setSelectedBadge] = useState(
+		"https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge100.png?alt=media&token=8f125eb9-814f-4300-809c-1ab75049d7ee"
+	);
+	const [openBadgeModal, setOpenBadgeModal] = useState(false);
+	const point = 3000;
+	const badgeList = [
+		{
+			point: 100,
+			name: "100 포인트 달성 뱃지",
+			url: "https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge100.png?alt=media&token=8f125eb9-814f-4300-809c-1ab75049d7ee",
+		},
+		{
+			point: 300,
+			name: "300 포인트 달성 뱃지",
+			url: "https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge300.png?alt=media&token=6ee0120a-00b2-460a-9953-735bed462802",
+		},
+		{
+			point: 500,
+			name: "500 포인트 달성 뱃지",
+			url: "https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge500.png?alt=media&token=d176caa3-6c0f-4211-9412-9e32fe5e9e20",
+		},
+		{
+			point: 1000,
+			name: "1000 포인트 달성 뱃지",
+			url: "https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge1000.png?alt=media&token=cd87944a-89dc-4096-8612-44c6cd2e54db",
+		},
+		{
+			point: 1500,
+			name: "1500 포인트 달성 뱃지",
+			url: "https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge1500.png?alt=media&token=bc6033e2-c2cc-482d-85b5-6913917c16f3",
+		},
+		{
+			point: 2000,
+			name: "2000 포인트 달성 뱃지",
+			url: "https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge2000.png?alt=media&token=1b0f6886-285e-4667-833d-238bf2d9dafb",
+		},
+		{
+			point: 2500,
+			name: "2500 포인트 달성 뱃지",
+			url: "https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge2500.png?alt=media&token=37c2c220-dad1-4d63-9fa5-37e05da9d9e3",
+		},
+		{
+			point: 3000,
+			name: "3000 포인트 달성 뱃지",
+			url: "https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge3000.png?alt=media&token=572d21f5-0d26-456d-bde3-28cdfdd85a30",
+		},
+	];
 
 	const handleNicknameClick = () => {
 		setEditingNickname(true);
@@ -189,6 +241,15 @@ const Profile = () => {
 				<Typography variant='h6' color='success.main'>
 					1,500점
 				</Typography>
+			</Box>
+
+			<Box className={styles.pointSection}>
+				<Typography variant='subtitle1' fontWeight='bold'>
+					내 뱃지
+				</Typography>
+				<IconButton onClick={() => setOpenBadgeModal(true)}>
+					<Avatar src={selectedBadge} sx={{width: 80, height: 80}} />
+				</IconButton>
 			</Box>
 
 			{/* 챌린지 */}
@@ -373,6 +434,33 @@ const Profile = () => {
 					</Box>
 				</Box>
 			</Modal>
+			<Dialog open={openBadgeModal} onClose={() => setOpenBadgeModal(false)} maxWidth='xs' fullWidth>
+				<DialogTitle>뱃지 변경</DialogTitle>
+				<DialogContent>
+					<Grid container spacing={2}>
+						{badgeList
+							.filter((b) => b.point <= point)
+							.map((badge) => (
+								<Grid item xs={4} key={badge.point} sx={{display: "flex", justifyContent: "center"}}>
+									<IconButton
+										onClick={() => {
+											const confirmChange = window.confirm("뱃지를 변경하시겠습니까?");
+											if (confirmChange) {
+												setSelectedBadge(badge.url);
+												setOpenBadgeModal(false);
+											}
+										}}
+										sx={{flexDirection: "column"}}>
+										<Avatar src={badge.url} sx={{width: 56, height: 56}} />
+										<Typography variant='caption' align='center' sx={{whiteSpace: "pre-line"}}>
+											{badge.name.replace("포인트", "포인트\n")}
+										</Typography>
+									</IconButton>
+								</Grid>
+							))}
+					</Grid>
+				</DialogContent>
+			</Dialog>
 		</Box>
 	);
 };

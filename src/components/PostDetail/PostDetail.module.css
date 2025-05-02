@@ -41,7 +41,7 @@
 }
 
 .nickname {
-	font-size: 14px !important;
+	font-size: 16px !important;
 	font-weight: bold !important;
 	color: #388e3c !important;
 }
@@ -115,7 +115,7 @@
 }
 
 .commentNickname {
-	font-size: 12px !important;
+	font-size: 14px !important;
 	font-weight: bold !important;
 	color: #388e3c !important;
 }
@@ -179,7 +179,7 @@
 
 .replyNickname {
 	font-weight: bold !important;
-	font-size: 12px !important;
+	font-size: 14px !important;
 	color: #388e3c !important;
 }
 
