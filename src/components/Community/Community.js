@@ -148,7 +148,7 @@ const Community = () => {
 			setTimeout(() => {
 				setRefreshKey((prev) => prev + 1); // 새로고침 트리거
 				resolve();
-			}, 1000); // 1초 후 리프레시 완료
+			}, 500); // 1초 후 리프레시 완료
 		});
 	};
 
@@ -218,7 +218,7 @@ const Community = () => {
 						disableLazyLoading
 						disableDiscovery
 						hysteresis={0.3}
-						style={{flex: 1}}>
+						animateHeight>
 						{tabKeys.map((key) => (
 							<Box key={key} className={styles.listWrapper}>
 								<List className={styles.list}>
