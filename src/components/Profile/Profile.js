@@ -80,6 +80,11 @@ const Profile = () => {
 	const point = 3000;
 	const badgeList = [
 		{
+			point: 0,
+			name: "없음",
+			url: "",
+		},
+		{
 			point: 100,
 			name: "100 포인트 달성 뱃지",
 			url: "https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge100.png?alt=media&token=8f125eb9-814f-4300-809c-1ab75049d7ee",
@@ -248,7 +253,24 @@ const Profile = () => {
 					내 뱃지
 				</Typography>
 				<IconButton onClick={() => setOpenBadgeModal(true)}>
-					<Avatar src={selectedBadge} sx={{width: 80, height: 80}} />
+					{selectedBadge ? (
+						<Avatar src={selectedBadge} sx={{width: 80, height: 80}} />
+					) : (
+						<Box
+							sx={{
+								width: 80,
+								height: 80,
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								borderRadius: "50%",
+								bgcolor: "#bdbdbd",
+								color: "#fff",
+								fontWeight: "bold",
+							}}>
+							없음
+						</Box>
+					)}
 				</IconButton>
 			</Box>
 
@@ -451,7 +473,9 @@ const Profile = () => {
 											}
 										}}
 										sx={{flexDirection: "column"}}>
-										<Avatar src={badge.url} sx={{width: 56, height: 56}} />
+										<Avatar src={badge.url || undefined} sx={{width: 56, height: 56}}>
+											{!badge.url && <Typography variant='caption'>없음</Typography>}
+										</Avatar>
 										<Typography variant='caption' align='center' sx={{whiteSpace: "pre-line"}}>
 											{badge.name.replace("포인트", "포인트\n")}
 										</Typography>
