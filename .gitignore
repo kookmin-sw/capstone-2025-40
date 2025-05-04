@@ -470,3 +470,5 @@ $RECYCLE.BIN/
 
 **/migrations/*.py
 !**/migrations/__init__.py
+.idea/capstone-2025-40.iml
+.idea/misc.xml

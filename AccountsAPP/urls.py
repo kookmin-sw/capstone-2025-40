@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import UserSignupView, UsernameLoginView, TodayAssignedQuestsView, UserQuestResultCreateView, RandomTipView, \
-    TodayQuestSummaryView, ChallengeStatsAPIView
+    TodayQuestSummaryView, ChallengeStatsAPIView, DuplicateCheckAPIView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
@@ -12,4 +12,5 @@ urlpatterns = [
     path('tips/random/', RandomTipView.as_view(), name='random-tip'),
     path('my-quests/today/summary/', TodayQuestSummaryView.as_view(), name='today-quest-summary'),
     path('my-challenge-stats/', ChallengeStatsAPIView.as_view()),
+    path('check-duplicate/', DuplicateCheckAPIView.as_view()),
 ]

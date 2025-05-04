@@ -182,7 +182,7 @@ from rest_framework.permissions import AllowAny
 
 User = get_user_model()
 
-class DuplicateCheckAPIView(APIView):
+class DuplicateCheckAPIView(APIView): # 중복검사 api
     permission_classes = [AllowAny]
 
     def get(self, request):
