@@ -7,6 +7,7 @@ import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import ForumIcon from "@mui/icons-material/Forum";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import PortraitOutlinedIcon from "@mui/icons-material/PortraitOutlined";
+import DeleteSweepOutlinedIcon from "@mui/icons-material/DeleteSweepOutlined";
 import styles from "./Main.module.css";
 import Home from "../Home/Home";
 import Challenge from "../Challenge/Challenge";
@@ -43,10 +44,14 @@ const Main = () => {
 	};
 
 	const renderRightIcon = () => {
-		if (currentPath === "community") {
-			return <PortraitOutlinedIcon sx={{cursor: "pointer"}} onClick={() => navigate("/myposts")} />;
-		}
-		return null;
+		return (
+			<>
+				{currentPath === "community" && (
+					<PortraitOutlinedIcon sx={{cursor: "pointer"}} onClick={() => navigate("/myposts")} />
+				)}
+				<DeleteSweepOutlinedIcon sx={{cursor: "pointer"}} onClick={() => navigate("/trashdictionary")} />
+			</>
+		);
 	};
 
 	return (

@@ -63,3 +63,7 @@ body {
 	background-color: #4caf50 !important;
 	font-weight: 500 !important;
 }
+
+.MuiAccordionSummary-content {
+	align-items: center;
+}

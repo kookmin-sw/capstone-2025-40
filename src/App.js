@@ -10,6 +10,8 @@ import PostDetail from "./components/PostDetail/PostDetail";
 import PostCreate from "./components/PostCreate/PostCreate";
 import MyPosts from "./components/MyPosts/MyPosts";
 import Profile from "./components/Profile/Profile";
+import TrashDictionary from "./components/TrashDictionary/TrashDictionary";
+import TrashDetailPage from "./components/TrashDictionary/TrashDetailPage";
 
 const App = () => {
 	const [isInstalled, setIsInstalled] = useState(
@@ -41,6 +43,8 @@ const App = () => {
 						<Route path='/post/create' element={<PostCreate />} />
 						<Route path='/myposts' element={<MyPosts />} />
 						<Route path='/profile' element={<Profile />} />
+						<Route path='/trashdictionary' element={<TrashDictionary />} />
+						<Route path='/trash/:id' element={<TrashDetailPage />} />
 						{/* 기본적으로 로그인 페이지로 이동 */}
 						<Route path='*' element={<Navigate to='/login' />} />
 					</>
