@@ -1,5 +1,6 @@
+from django.utils.text import Truncator
 from rest_framework import serializers
-from .models import CustomUser
+from .models import CustomUser, CommunityPost, Campaign, Comment
 from django.contrib.auth.hashers import make_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -56,3 +57,79 @@ class UserQuestResultSerializer(serializers.ModelSerializer):
 
 
 
+# serializers.py
+class CommunityPostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommunityPost
+        fields = ['title', 'content', 'post_type']
+
+
+class CampaignSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Campaign
+        fields = ['city', 'district', 'start_date', 'end_date', 'participant_limit']
+
+
+class CommunityPostDetailSerializer(serializers.ModelSerializer):
+    # post_type이 'campaign'일 때 post.campaign을 직렬화
+    campaign = CampaignSerializer(read_only=True)
+
+    class Meta:
+        model = CommunityPost
+        fields = [
+            'id', 'user', 'title', 'content', 'post_type',
+            'created_at', 'like_count', 'comment_count',
+            'campaign',
+        ]
+
+
+class CommunityPostListSerializer(serializers.ModelSerializer):
+    comment_count = serializers.IntegerField(read_only=True)
+    like_count = serializers.IntegerField(read_only=True)
+    excerpt = serializers.SerializerMethodField()
+    participant_limit = serializers.SerializerMethodField()
+    current_participant_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CommunityPost
+        fields = [
+            'id',
+            'title',
+            'excerpt',
+            'post_type',
+            'created_at',
+            'like_count',
+            'comment_count',
+            # 캠페인 전용 없으면 null 처리
+            'participant_limit',
+            'current_participant_count',
+        ]
+
+    def get_excerpt(self, obj):
+        # content가 너무 길면 15자만 보여주고 ... 처리
+        return Truncator(obj.content).chars(15, truncate='...')
+
+    def get_participant_limit(self, obj):
+        # 캠페인 글일 때만 max 인원 노출
+        if obj.post_type == 'campaign' and hasattr(obj, 'campaign'):
+            return obj.campaign.participant_limit
+        return None
+
+    def get_current_participant_count(self, obj):
+        # 캠페인 글일 때만 현재 참여 인원 노출
+        if obj.post_type == 'campaign' and hasattr(obj, 'campaign'):
+            return obj.campaign.current_participant_count
+        return None
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = ['content']  # 작성 시 필요 입력 필드
+
+class CommentDetailSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ['id', 'user', 'content', 'created_at']

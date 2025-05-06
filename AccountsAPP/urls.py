@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import UserSignupView, UsernameLoginView, TodayAssignedQuestsView, UserQuestResultCreateView, RandomTipView, \
-    TodayQuestSummaryView, ChallengeStatsAPIView, DuplicateCheckAPIView
+    TodayQuestSummaryView, ChallengeStatsAPIView, DuplicateCheckAPIView, \
+    CommunityPostDetailView, CommunityPostListCreateView, CommentCreateView, CommentDeleteView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
@@ -13,4 +14,8 @@ urlpatterns = [
     path('my-quests/today/summary/', TodayQuestSummaryView.as_view(), name='today-quest-summary'),
     path('my-challenge-stats/', ChallengeStatsAPIView.as_view()),
     path('check-duplicate/', DuplicateCheckAPIView.as_view()),
+    path('community/posts/', CommunityPostListCreateView.as_view(), name='community-post-create'), # ?post_type=<타입>&page=<페이지 번호> 어떤 유형의 글인지 전체 조회 # ?mine=true 내 글조회
+    path('community/posts/<int:pk>/', CommunityPostDetailView.as_view(), name='community-post-detail'),
+    path('api/community/posts/<int:post_id>/comments/', CommentCreateView.as_view(), name='comment-create'),
+    path('api/community/posts/<int:post_id>/comments/<int:comment_id>/', CommentDeleteView.as_view(), name='comment-delete'),
 ]

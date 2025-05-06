@@ -44,11 +44,11 @@ class Tip(models.Model):
         return self.text[:50]  # 앞 50자만 보여줍니다.
 
 
-# 커뮤니티 게시글
 class CommunityPost(models.Model):
     POST_TYPES = [
-        ('certification', 'Certification'),
-        ('campaign', 'Campaign'),
+        ('free', '자유글'),
+        ('info', '정보글'),
+        ('campaign', '캠페인'),
     ]
 
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
@@ -57,22 +57,33 @@ class CommunityPost(models.Model):
     post_type = models.CharField(max_length=20, choices=POST_TYPES)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # 비정규화 필드
+    like_count = models.PositiveIntegerField(default=0)
+    scrap_count = models.PositiveIntegerField(default=0)
+    comment_count = models.PositiveIntegerField(default=0)
+
+
     def __str__(self):
         return self.title
 
 
-# 캠페인 정보
 class Campaign(models.Model):
     post = models.OneToOneField(CommunityPost, on_delete=models.CASCADE, related_name='campaign')
-    location = models.CharField(max_length=100)
-    event_date = models.DateField()
-    participant_limit = models.PositiveIntegerField()
+    start_date = models.DateField()
+    end_date = models.DateField()
+    city = models.CharField(max_length=50)  # 예: '서울시'
+    district = models.CharField(max_length=50)  # 예: '마포구'
+    participant_limit = models.PositiveIntegerField()  # 양수만 받음.
 
-    def __str__(self):
-        return f"Campaign: {self.post.title}"
+    @property
+    def current_participant_count(self): # 이것도 필드처럼 동작 campaign.current_participant_count 로 쓸 수 있음.
+        return self.participants.count()
+
+    @property
+    def is_full(self):
+        return self.participants.count() >= self.participant_limit
 
 
-# 캠페인 참여자
 class CampaignParticipant(models.Model):
     campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name='participants')
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
@@ -81,10 +92,58 @@ class CampaignParticipant(models.Model):
     class Meta:
         unique_together = ('campaign', 'user')
 
-
-# 댓글
+# 댓글(대댓글도 포함)
 class Comment(models.Model):
     post = models.ForeignKey(CommunityPost, on_delete=models.CASCADE, related_name='comments')
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # 비정규화 필드
+    like_count = models.PositiveIntegerField(default=0)
+    report_count = models.PositiveIntegerField(default=0)
+
+
+# 좋아요
+class PostLike(models.Model):
+    post = models.ForeignKey(CommunityPost, on_delete=models.CASCADE, related_name='likes')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    liked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('post', 'user')  # 한 사용자가 한 게시물에 한 번만 좋아요 가능
+
+# 스크랩
+class PostScrap(models.Model):
+    post = models.ForeignKey(CommunityPost, on_delete=models.CASCADE, related_name='scraps')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    scrapped_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('post', 'user')  # 중복 스크랩 방지
+
+# 댓글 좋아요
+class CommentLike(models.Model):
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='likes')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    liked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('comment', 'user')  # 한 유저가 같은 댓글에 여러 번 좋아요
+
+# 댓글 신고
+class CommentReport(models.Model):
+    REPORT_REASONS = [
+        ('spam', '스팸'),
+        ('abuse', '욕설/비방'),
+        ('other', '기타'),
+    ]
+
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='reports')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    reason = models.CharField(max_length=20, choices=REPORT_REASONS)
+    details = models.TextField(blank=True)  # 추가 설명
+    reported_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('comment', 'user')  # 한 유저가 같은 댓글에 중복 신고

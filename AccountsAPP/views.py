@@ -1,11 +1,18 @@
 from collections import defaultdict
+
+from django.db.models import F
 from django.utils.timezone import now
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import generics, permissions, status
-from .models import UserQuestAssignment, UserQuestResult, Tip
-from .serializers import UserSignupSerializer, UsernameLoginSerializer, UserQuestAssignmentSerializer, UserQuestResultSerializer
+from .models import UserQuestAssignment, UserQuestResult, Tip, Comment
+from .serializers import UserSignupSerializer, UsernameLoginSerializer, UserQuestAssignmentSerializer, \
+    UserQuestResultSerializer, CommunityPostListSerializer, CommunityPostDetailSerializer, CommentSerializer, \
+    CommentDetailSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from datetime import date, timedelta
 
@@ -116,7 +123,7 @@ class ChallengeStatsAPIView(APIView):
 
     def get(self, request):
         user = request.user
-        today = now().date()
+        today = date.today()
 
         # 오늘의 퀘스트 진행률
         today_assignments = UserQuestAssignment.objects.filter(user=user, assigned_date=today)
@@ -199,3 +206,200 @@ class DuplicateCheckAPIView(APIView): # 중복검사 api
         exists = User.objects.filter(**filter_kwargs).exists()
 
         return JsonResponse({"exists": exists})
+
+
+# 나중에 옮길 예정
+# views.py
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import ValidationError, PermissionDenied
+from .models import CommunityPost, Campaign
+from .serializers import CommunityPostSerializer, CampaignSerializer
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+
+CAMPAIGN_DATA_SCHEMA = openapi.Schema(
+    type=openapi.TYPE_OBJECT,
+    properties={
+        'title': openapi.Schema(type=openapi.TYPE_STRING),
+        'content': openapi.Schema(type=openapi.TYPE_STRING),
+        'post_type': openapi.Schema(type=openapi.TYPE_STRING, enum=['free','info','campaign']),
+        'campaign_data': openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'city': openapi.Schema(type=openapi.TYPE_STRING),
+                'district': openapi.Schema(type=openapi.TYPE_STRING),
+                'start_date': openapi.Schema(type=openapi.TYPE_STRING, format='date'),
+                'end_date': openapi.Schema(type=openapi.TYPE_STRING, format='date'),
+                'participant_limit': openapi.Schema(type=openapi.TYPE_INTEGER),
+            },
+            required=['city','district','start_date','end_date','participant_limit']
+        )
+    },
+    required=['title','post_type']
+)
+
+# 카테고리별 List GET, POST api(두가지 기능)
+class CommunityPostListCreateView(APIView):
+
+    def get_permissions(self):
+        # POST는 로그인 필요
+        if self.request.method == 'POST':
+            return [IsAuthenticated()]
+
+        # GET + mine=true 이면 로그인 필요
+        if self.request.method == 'GET' and self.request.query_params.get('mine') == 'true':
+            return [IsAuthenticated()]
+
+        # 그 외 GET 요청은 누구나
+        return [AllowAny()]
+
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                'post_type',
+                openapi.IN_QUERY,
+                description="글 유형",
+                type=openapi.TYPE_STRING,
+                enum=['free', 'info', 'campaign']
+            ),
+            openapi.Parameter(
+                'mine',
+                openapi.IN_QUERY,
+                description="내 글만 보기 (true/false)",
+                type=openapi.TYPE_BOOLEAN
+            ),
+            openapi.Parameter(
+                'page',
+                openapi.IN_QUERY,
+                description="페이지 번호",
+                type=openapi.TYPE_INTEGER
+            ),
+        ]
+    )
+    def get(self, request):
+        post_type = request.query_params.get('post_type')
+        mine = request.query_params.get('mine')
+        queryset = CommunityPost.objects.all().order_by('-created_at')
+
+        # mine=true 이면 로그인 유저 필터
+        if mine == 'true':
+            queryset = queryset.filter(user=request.user)
+
+        if post_type:
+            queryset = queryset.filter(post_type=post_type)
+
+        # 페이지네이션 수동 적용 (DRF의 기본 페이지네이터 이용)
+        from rest_framework.pagination import PageNumberPagination
+
+        paginator = PageNumberPagination()
+        page = paginator.paginate_queryset(queryset, request)
+        serializer = CommunityPostListSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    @swagger_auto_schema(
+        request_body=CAMPAIGN_DATA_SCHEMA,
+        responses={201: openapi.Response('Created')}
+    )
+    def post(self, request):
+        post_data = request.data.copy()
+        campaign_data = post_data.pop('campaign_data', None)
+
+        # Step 1: 기본 게시글 저장
+        post_serializer = CommunityPostSerializer(data=post_data)
+        post_serializer.is_valid(raise_exception=True)
+        post = post_serializer.save(user=request.user)
+
+        # Step 2: 캠페인인 경우 추가 저장
+        if post.post_type == 'campaign':
+            if not campaign_data:
+                raise ValidationError({"campaign_data": "캠페인 정보가 필요합니다."})
+            campaign_serializer = CampaignSerializer(data=campaign_data)
+            campaign_serializer.is_valid(raise_exception=True)
+            campaign_serializer.save(post=post)
+
+        return Response({"message": "게시글이 생성되었습니다.", "post_id": post.id}, status=201)
+
+#
+class CommunityPostDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk): # patch, delete에 쓰는 용도
+        return get_object_or_404(CommunityPost, pk=pk)
+
+    # 상세 조회
+    def get(self, request, pk):
+        post = get_object_or_404(CommunityPost, pk=pk)
+        serializer = CommunityPostDetailSerializer(post)
+        return Response(serializer.data)
+
+    # 수정
+    def patch(self, request, pk):
+        post = self.get_object(pk)
+        if post.user != request.user:
+            raise PermissionDenied("본인 글만 수정할 수 있습니다.")
+
+        serializer = CommunityPostSerializer(post, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        # 캠페인일 경우 campaign 정보도 수정
+        if post.post_type == "campaign" and "campaign_data" in request.data:
+            campaign = post.campaign  # OneToOneField
+            campaign_serializer = CampaignSerializer(campaign, data=request.data["campaign_data"], partial=True)
+            campaign_serializer.is_valid(raise_exception=True)
+            campaign_serializer.save()
+
+        return Response(serializer.data)
+
+    # 삭제
+    def delete(self, request, pk):
+        post = self.get_object(pk)
+        if post.user != request.user:
+            raise PermissionDenied("본인 글만 삭제할 수 있습니다.")
+        post.delete()
+        return Response(status=204)
+
+
+class CommentCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, post_id):
+        # 1) 대상 게시글 확인
+        post = get_object_or_404(CommunityPost, pk=post_id)
+
+        # 2) 댓글 생성
+        serializer = CommentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        comment = serializer.save(user=request.user, post=post)
+
+        # 3) 댓글 수 카운트 업데이트
+        post.comment_count = F('comment_count') + 1
+        post.save(update_fields=['comment_count'])
+        # F() 를 썼으니 실제 값 갱신을 위해 리프레시
+        post.refresh_from_db(fields=['comment_count'])
+
+        # 4) 생성된 댓글 정보 반환
+        detail = CommentDetailSerializer(comment)
+        return Response(detail.data, status=status.HTTP_201_CREATED)
+
+
+class CommentDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, post_id, comment_id):
+        # 1) 대상 댓글 가져오기 (post_id 검증 포함)
+        comment = get_object_or_404(Comment, pk=comment_id, post_id=post_id)
+        if comment.user != request.user:
+            raise PermissionDenied("본인 댓글만 삭제할 수 있습니다.")
+
+        # 2) 댓글 삭제 전, 연관된 게시글의 comment_count 감소
+        post = comment.post
+        comment.delete()
+        post.comment_count = F('comment_count') - 1
+        post.save(update_fields=['comment_count'])
+        post.refresh_from_db(fields=['comment_count'])
+
+        # 3) 삭제 성공 응답
+        return Response(status=status.HTTP_204_NO_CONTENT)
