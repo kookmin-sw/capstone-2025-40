@@ -1,6 +1,7 @@
 ---
 layout: default
 title: 기술 스택
+permalink: /tech-stack/
 ---
 
 # 🛠️ 기술 스택

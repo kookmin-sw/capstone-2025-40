@@ -4,3 +4,5 @@ baseurl: "/GreenDay"
 url: "https://greenday.github.io/"
 theme: minima
 markdown: kramdown
+permalink: pretty
+

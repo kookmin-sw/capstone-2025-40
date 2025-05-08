@@ -1,6 +1,7 @@
 ---
 layout: default
 title: 팀원 소개
+permalink: /team/
 ---
 
 # 👥 팀원 소개

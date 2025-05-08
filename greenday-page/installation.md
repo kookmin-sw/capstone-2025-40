@@ -1,6 +1,7 @@
 ---
 layout: default
 title: 설치하기
+permalink: /installation/
 ---
 
 # 📲 서비스 설치하기
