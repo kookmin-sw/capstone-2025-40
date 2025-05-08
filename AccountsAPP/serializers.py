@@ -65,9 +65,11 @@ class CommunityPostSerializer(serializers.ModelSerializer):
 
 
 class CampaignSerializer(serializers.ModelSerializer):
+    # 현재 참여 인원 (모델의 @property 사용)
+    current_participant_count = serializers.IntegerField(read_only=True)
     class Meta:
         model = Campaign
-        fields = ['city', 'district', 'start_date', 'end_date', 'participant_limit']
+        fields = ['city', 'district', 'start_date', 'end_date', 'participant_limit', 'current_participant_count']
 
 
 class CommunityPostDetailSerializer(serializers.ModelSerializer):
