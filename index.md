@@ -1,8 +1,9 @@
-# 🌱 Green Day - 세상을 파랗게 만드는 작은 습관
-
+# 🌱 Green Day
+      세상을 파랗게 만드는 작은 습관
 ---
-
-[Image](src/logo.png)
+<p align="center">
+	<img width="100" height="100" src="src/logo.png">
+</p>
 
 GreenDay는 사용자가 일상 속에서 환경 보호를 실천할 수 있도록 도와주는 서비스입니다.
 
@@ -10,8 +11,10 @@ GreenDay는 사용자가 일상 속에서 환경 보호를 실천할 수 있도�
 
 ## 📲 서비스 설치하기
 
-[Image](src/QR.png)
+<p align="center">
+	<img width="150" height="150" src="src/QR.png">
+</p>
 
 1. 위의 QR 코드를 기본 카메라 어플로 스캔하여 접속
-2. 안드로이드 이용자는 앱 설치하기 버튼을 누르고,
- iOS 이용자라면 공유 버튼을 누르고 “홈 화면에 추가”를 선택
+2. AndroidOS 이용자라면 앱 설치하기 버튼을 누르고,   
+iOS 이용자라면 공유 버튼을 누르고 “홈 화면에 추가”를 선택
