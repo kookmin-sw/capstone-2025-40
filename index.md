@@ -1,37 +1,17 @@
-## Welcome to GitHub Pages
+# 🌱 Green Day - 세상을 파랗게 만드는 작은 습관
 
-You can use the [editor on GitHub](https://github.com/kookmin-sw/cap-template/edit/master/index.md) to maintain and preview the content for your website in Markdown files.
+---
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+[Image](src/logo.png)
 
-### Markdown
+GreenDay는 사용자가 일상 속에서 환경 보호를 실천할 수 있도록 도와주는 서비스입니다.
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+매일 자동으로 제공되는 친환경 미션을 수행하고, 다른 사람들과 함께 직접 챌린지를 만들어 작은 행동을 공유해보세요.
 
-```markdown
-Syntax highlighted code block
+## 📲 서비스 설치하기
 
-# Header 1
-## Header 2
-### Header 3
+[Image](src/QR.png)
 
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/kookmin-sw/cap-template/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+1. 위의 QR 코드를 기본 카메라 어플로 스캔하여 접속
+2. 안드로이드 이용자는 앱 설치하기 버튼을 누르고,
+ iOS 이용자라면 공유 버튼을 누르고 “홈 화면에 추가”를 선택
