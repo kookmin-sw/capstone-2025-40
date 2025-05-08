@@ -1,5 +1,5 @@
 # 🌱 Green Day
-      세상을 파랗게 만드는 작은 습관
+## 세상을 파랗게 만드는 작은 습관 만들기
 ---
 <p align="center">
 	<img width="100" height="100" src="src/logo.png">
