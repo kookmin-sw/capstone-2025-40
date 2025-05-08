@@ -139,6 +139,8 @@ const PostCreate = () => {
 							value={endDate}
 							onChange={(newValue) => setEndDate(newValue)}
 							format='yyyy-MM-dd'
+							disabled={!startDate}
+							minDate={startDate}
 							closeOnSelect={true}
 							slotProps={{
 								toolbar: {hidden: true},

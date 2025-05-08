@@ -1,10 +1,12 @@
 import React, {useState, useEffect} from "react";
-import {Box, Typography, LinearProgress, CircularProgress} from "@mui/material";
+import {Box, Typography, LinearProgress, CircularProgress, Paper} from "@mui/material";
 import styles from "./Challenge.module.css";
 import {LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, LabelList} from "recharts";
 import ChallengeModal from "./ChallengeModal";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import GroupsIcon from "@mui/icons-material/Groups";
 import PullToRefresh from "../PullToRefresh/PullToRefresh";
 import axiosInstance from "../../axiosInstance";
 
@@ -192,6 +194,47 @@ const Challenge = () => {
 						<div className={styles.label}>🏡 동네 랭킹</div>
 						<div className={styles.rank}>12위</div>
 					</Box>
+				</Box>
+
+				{/* 종료된 챌린지 섹션 */}
+				<Box mt={4}>
+					<Typography className={styles.sectionTitle}>종료된 챌린지</Typography>
+					{[
+						{
+							title: "캡스톤 팀 40 챌린지 1",
+							date: "2025-04-28 ~ 2025-04-29",
+							members: 4,
+							progress: 100,
+						},
+						{
+							title: "캡스톤 팀 40 챌린지 2",
+							date: "2025-05-01 ~ 2025-05-05",
+							members: 4,
+							progress: 80,
+						},
+					].map((challenge, idx) => (
+						<Paper key={idx} sx={{p: 2, mb: 2, borderRadius: "12px"}}>
+							<Typography fontWeight='bold' sx={{color: "#2e7d32", fontSize: "16px"}}>
+								{challenge.title}
+							</Typography>
+							<Box display='flex' alignItems='center' justifyContent='center' gap={2} mt={0.5}>
+								<Box display='flex' alignItems='center' gap={0.5}>
+									<CalendarMonthIcon sx={{fontSize: 16, color: "#4caf50"}} />
+									<Typography sx={{fontSize: "14px", color: "#4caf50"}}>{challenge.date}</Typography>
+								</Box>
+								<Box display='flex' alignItems='center' gap={0.5}>
+									<GroupsIcon sx={{fontSize: 16, color: "#4caf50"}} />
+									<Typography sx={{fontSize: "14px", color: "#4caf50"}}>{challenge.members}</Typography>
+								</Box>
+							</Box>
+							<Box display='flex' alignItems='center' gap={1} mt={1}>
+								<LinearProgress className={styles.progressBar} variant='determinate' value={challenge.progress} />
+								<Typography fontWeight='bold' color='#4caf50' minWidth={40}>
+									{challenge.progress}%
+								</Typography>
+							</Box>
+						</Paper>
+					))}
 				</Box>
 
 				<ChallengeModal
