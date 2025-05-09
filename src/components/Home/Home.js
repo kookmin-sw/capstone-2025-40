@@ -223,7 +223,12 @@ const Home = () => {
 					} finally {
 						setLoadingChallengeId(null);
 					}
+				} else {
+					setLoadingChallengeId(null);
 				}
+			};
+			input.oncancel = () => {
+				setLoadingChallengeId(null);
 			};
 
 			input.onerror = () => {
