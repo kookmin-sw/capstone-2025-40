@@ -132,7 +132,7 @@ const Home = () => {
 
 				const challengesRes = await challengePromise;
 
-				const challengeData = challengesRes.data;
+				const challengeData = challengesRes.data.results;
 				setTodayChallenges(challengeData);
 				const completedIds = challengeData.filter((c) => c.is_completed).map((c) => c.id);
 				setCompleted(completedIds);
