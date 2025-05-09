@@ -1,0 +1,65 @@
+/* 기본 스타일 설정 */
+body, html {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+/* 네비게이션 바 */
+nav {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background-color: #4CAF50;
+    z-index: 100;
+}
+
+nav ul {
+    display: flex;
+    justify-content: center;
+    list-style-type: none;
+    margin: 0;
+    padding: 10px 0;
+}
+
+nav ul li {
+    margin: 0 15px;
+}
+
+nav ul li a {
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+}
+
+nav ul li a:hover {
+    text-decoration: underline;
+}
+
+/* 섹션 스타일 */
+.section {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    color: white;
+    scroll-snap-align: start;
+}
+
+#section1 {
+    background-color: #4CAF50;
+}
+
+#section2 {
+    background-color: #2196F3;
+}
+
+#section3 {
+    background-color: #FF5722;
+}
+
+#section4 {
+    background-color: #9C27B0;
+}
