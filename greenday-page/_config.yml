@@ -1,7 +1,7 @@
 title: Green Day
 description: 세상을 파랗게 만드는 작은 습관 만들기
 baseurl: "/GreenDay"
-url: "https://greenday.github.io/"
+url: "https://capstone-2025-40.github.io/"
 theme: minima
 markdown: kramdown
 permalink: pretty
