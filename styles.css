@@ -1,0 +1,179 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+}
+
+header {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    background-color: #88d38b;
+    padding: 0.5rem 2rem;
+}
+
+nav {
+    height: 50px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 3rem;
+}
+
+.logo a {
+    color: white;
+    text-decoration: none;
+    font-size: 1.5rem;
+    font-weight: bold;
+    transition: opacity 0.3s;
+}
+
+.logo a:hover {
+    opacity: 0.8;
+}
+
+nav ul {
+    display: flex;
+    list-style: none;
+    gap: 2rem;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: opacity 0.3s;
+}
+
+nav a:hover {
+    opacity: 0.8;
+}
+
+#fullpage {
+    height: 100vh;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+}
+
+.section {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    scroll-snap-align: start;
+    text-align: center;
+}
+
+#section1 {
+    background-color: #f1f8e9;
+}
+
+#section2 {
+    background-color: #e8f5e9;
+}
+
+#section3 {
+    background-color: #f1f8e9;
+}
+
+#section4 {
+    background-color: #e8f5e9;
+}
+
+h1, h2 {
+    margin-bottom: 1.5rem;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    margin: 1rem 0;
+}
+
+ul {
+    list-style-position: inside;
+    margin: 1rem 0;
+}
+
+li {
+    margin: 0.5rem 0;
+}
+
+.intro-container {
+    display: flex;
+    align-items: center;
+    gap: 4rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.logo-image {
+    flex-shrink: 0;
+}
+
+.logo-image img {
+    width: 300px;
+    height: auto;
+    margin: 0;
+}
+
+.intro-text {
+    text-align: left;
+}
+
+.intro-text h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.intro-text p {
+    font-size: 1.2rem;
+    color: #333;
+}
+
+.install-container {
+    display: flex;
+    align-items: center;
+    gap: 4rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.qr-image {
+    flex-shrink: 0;
+}
+
+.qr-image img {
+    width: 300px;
+    height: auto;
+    margin: 0;
+}
+
+.install-text {
+    text-align: left;
+}
+
+.install-text h2 {
+    font-size: 2.2rem;
+    margin-bottom: 1.5rem;
+}
+
+.install-text p {
+    font-size: 1.2rem;
+    color: #333;
+    line-height: 1.8;
+} 
