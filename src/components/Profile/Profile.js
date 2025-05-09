@@ -151,7 +151,11 @@ const Profile = () => {
 
 		setTimeout(() => {
 			const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-			const fakeData = [2, 4, 5].filter((d) => d <= daysInMonth);
+			const today = new Date();
+			const day1 = today.getDate();
+			const day2 = day1 - 1;
+			const day3 = day1 - 2;
+			const fakeData = [day1, day2, day3].filter((d) => d > 0 && d <= daysInMonth);
 			setHighlightedDays(fakeData);
 			setIsLoading(false);
 			setStreak(calculateStreak(fakeData, date));

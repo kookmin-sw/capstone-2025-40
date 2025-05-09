@@ -1,5 +1,7 @@
 import React, {useState, useEffect} from "react";
 import {Box, Typography, LinearProgress, CircularProgress, Paper} from "@mui/material";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 import styles from "./Challenge.module.css";
 import {LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, LabelList} from "recharts";
 import ChallengeModal from "./ChallengeModal";
@@ -21,24 +23,26 @@ const Challenge = () => {
 	const [modalTitle, setModalTitle] = useState("");
 	const [selectedRankData, setSelectedRankData] = useState([]);
 	const [refreshKey, setRefreshKey] = useState(0);
+	const [participantAnchorEl, setParticipantAnchorEl] = useState(null);
+	const participantOpen = Boolean(participantAnchorEl);
 
 	const personalRankData = [
-		{name: "사용자A", score: 65, rank: 1},
-		{name: "사용자B", score: 63, rank: 2},
-		{name: "사용자C", score: 62, rank: 3},
-		{name: "나", score: 60, rank: 4},
-		{name: "사용자E", score: 58, rank: 5},
-		{name: "사용자F", score: 57, rank: 6},
-		{name: "사용자G", score: 56, rank: 7},
+		{name: "성창민", score: 1505, rank: 11},
+		{name: "박상엄", score: 1500, rank: 12},
+		{name: "정하랑", score: 1495, rank: 13},
+		{name: "채주원", score: 1455, rank: 14},
+		{name: "나", score: 1450, rank: 15},
+		{name: "캡스톤", score: 1400, rank: 16},
+		{name: "국민대학교", score: 1335, rank: 17},
 	];
 
 	const localRankData = [
-		{name: "주민1", score: 72, rank: 9},
-		{name: "주민2", score: 71, rank: 10},
-		{name: "주민3", score: 69, rank: 11},
-		{name: "나", score: 67, rank: 12},
-		{name: "주민5", score: 65, rank: 13},
-		{name: "주민6", score: 64, rank: 14},
+		{name: "성북구 주민1", score: 1510, rank: 1},
+		{name: "나", score: 1450, rank: 2},
+		{name: "성북구 주민2", score: 1305, rank: 3},
+		{name: "성북구 주민3", score: 1005, rank: 4},
+		{name: "성북구 주민5", score: 1000, rank: 5},
+		{name: "성북구 주민6", score: 990, rank: 6},
 	];
 
 	const fetchStats = async () => {
@@ -188,11 +192,11 @@ const Challenge = () => {
 				<Box className={styles.rankingBox}>
 					<Box className={styles.rankingItem} onClick={() => openModal("개인 랭킹", personalRankData)}>
 						<div className={styles.label}>🥇 개인 랭킹</div>
-						<div className={styles.rank}>4위</div>
+						<div className={styles.rank}>15위</div>
 					</Box>
 					<Box className={styles.rankingItem} onClick={() => openModal("동네 랭킹", localRankData)}>
 						<div className={styles.label}>🏡 동네 랭킹</div>
-						<div className={styles.rank}>12위</div>
+						<div className={styles.rank}>2위</div>
 					</Box>
 				</Box>
 
@@ -222,7 +226,12 @@ const Challenge = () => {
 									<CalendarMonthIcon sx={{fontSize: 16, color: "#4caf50"}} />
 									<Typography sx={{fontSize: "14px", color: "#4caf50"}}>{challenge.date}</Typography>
 								</Box>
-								<Box display='flex' alignItems='center' gap={0.5}>
+								<Box
+									display='flex'
+									alignItems='center'
+									gap={0.5}
+									onClick={(e) => setParticipantAnchorEl(e.currentTarget)}
+									sx={{cursor: "pointer"}}>
 									<GroupsIcon sx={{fontSize: 16, color: "#4caf50"}} />
 									<Typography sx={{fontSize: "14px", color: "#4caf50"}}>{challenge.members}</Typography>
 								</Box>
@@ -235,6 +244,18 @@ const Challenge = () => {
 							</Box>
 						</Paper>
 					))}
+					<Menu
+						anchorEl={participantAnchorEl}
+						open={participantOpen}
+						onClose={() => setParticipantAnchorEl(null)}
+						anchorOrigin={{vertical: "bottom", horizontal: "center"}}
+						transformOrigin={{vertical: "top", horizontal: "center"}}>
+						{["성창민 (방장)", "박상엄", "정하람", "채주원 (나)"].map((name) => (
+							<MenuItem key={name} sx={{fontSize: "14px", color: "#555"}}>
+								{name}
+							</MenuItem>
+						))}
+					</Menu>
 				</Box>
 
 				<ChallengeModal
