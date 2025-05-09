@@ -1,5 +1,5 @@
 import React, {useState} from "react";
-import {Box, Button, TextField, Typography, InputAdornment, IconButton} from "@mui/material";
+import {Box, Button, TextField, Typography, InputAdornment, IconButton, CircularProgress} from "@mui/material";
 import {Visibility, VisibilityOff} from "@mui/icons-material";
 import {useNavigate} from "react-router-dom";
 import {useDispatch} from "react-redux";
@@ -21,6 +21,7 @@ const Signup = () => {
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [city, setCity] = useState("");
 	const [district, setDistrict] = useState("");
+	const [loading, setLoading] = useState(false);
 
 	// 에러 상태
 	const [errors, setErrors] = useState({});
@@ -52,16 +53,25 @@ const Signup = () => {
 				email,
 				password,
 				name: username,
-				// city,
-				// district,
+				city,
+				district,
 			};
+			setLoading(true);
 			dispatch(signup(formData))
 				.unwrap()
 				.then(() => {
 					alert("회원가입이 완료되었습니다.");
 					navigate("/login");
+					setLoading(false);
 				})
-				.catch((err) => alert("회원가입에 실패했습니다. 다시 시도해주세요."));
+				.catch((err) => {
+					if (err && err.username && Array.isArray(err.username)) {
+						alert(err.username[0]);
+					} else {
+						alert("회원가입에 실패했습니다. 다시 시도해주세요.");
+					}
+					setLoading(false);
+				});
 		}
 	};
 
@@ -244,9 +254,15 @@ const Signup = () => {
 				</TextField>
 			</Box>
 
-			<Button className={styles.signupButton} fullWidth onClick={handleSubmit}>
-				회원가입
-			</Button>
+			{loading ? (
+				<Button className={styles.signupButton} fullWidth disabled>
+					<CircularProgress size={24} color='success' />
+				</Button>
+			) : (
+				<Button className={styles.signupButton} fullWidth onClick={handleSubmit}>
+					회원가입
+				</Button>
+			)}
 
 			<Typography className={styles.loginText} onClick={() => navigate("/login")}>
 				이미 계정이 있으신가요? <strong>로그인하기</strong>
