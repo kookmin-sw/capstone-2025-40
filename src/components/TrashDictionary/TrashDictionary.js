@@ -28,13 +28,14 @@ const TrashDictionary = () => {
 	const [search, setSearch] = useState("");
 	const navigate = useNavigate();
 
-	const handleSearchChange = (e) => setSearch(e.target.value.replace(/\s/g, ""));
+	const handleSearchChange = (e) => setSearch(e.target.value);
 
 	const filteredData = trashData.filter((category) => {
+		const normalizedSearch = search.replace(/\s/g, "");
 		const normalizedCategory = category.category.replace(/\s/g, "");
 		return (
-			normalizedCategory.includes(search) ||
-			category.items.some((item) => item.name.replace(/\s/g, "").includes(search))
+			normalizedCategory.includes(normalizedSearch) ||
+			category.items.some((item) => item.name.replace(/\s/g, "").includes(normalizedSearch))
 		);
 	});
 
@@ -78,11 +79,13 @@ const TrashDictionary = () => {
 						<AccordionDetails>
 							<List>
 								{category.items
-									.filter(
-										(item) =>
-											item.name.replace(/\s/g, "").includes(search) ||
-											category.category.replace(/\s/g, "").includes(search)
-									)
+									.filter((item) => {
+										const normalizedSearch = search.replace(/\s/g, "");
+										return (
+											item.name.replace(/\s/g, "").includes(normalizedSearch) ||
+											category.category.replace(/\s/g, "").includes(normalizedSearch)
+										);
+									})
 									.map((item, idx) => (
 										<ListItem
 											button
