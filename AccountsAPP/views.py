@@ -42,6 +42,7 @@ class TodayAssignedQuestsView(generics.ListAPIView):
         )
 
 
+
 # 퀘스트 인증 (사진 등록)
 class UserQuestResultCreateView(APIView):
     permission_classes = [IsAuthenticated]
@@ -385,12 +386,26 @@ class CommentCreateView(APIView):
         return Response(detail.data, status=status.HTTP_201_CREATED)
 
 
-class CommentDeleteView(APIView):
+class CommentDetailView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def get_comment(self, post_id, comment_id):
+        return get_object_or_404(Comment, pk=comment_id, post_id=post_id)
+
+    def patch(self, request, post_id, comment_id):
+        comment = self.get_comment(post_id, comment_id)
+        if comment.user != request.user:
+            raise PermissionDenied("본인 댓글만 수정할 수 있습니다.")
+
+        serializer = CommentSerializer(comment, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(CommentDetailSerializer(comment).data)
 
     def delete(self, request, post_id, comment_id):
         # 1) 대상 댓글 가져오기 (post_id 검증 포함)
-        comment = get_object_or_404(Comment, pk=comment_id, post_id=post_id)
+        comment = self.get_comment(post_id, comment_id)
         if comment.user != request.user:
             raise PermissionDenied("본인 댓글만 삭제할 수 있습니다.")
 
@@ -403,3 +418,32 @@ class CommentDeleteView(APIView):
 
         # 3) 삭제 성공 응답
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ReplyCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, post_id, parent_id):
+        # 1) 원본 게시글과 부모 댓글 확인
+        post = get_object_or_404(CommunityPost, pk=post_id)
+        parent = get_object_or_404(Comment, pk=parent_id, post=post)
+
+        # 2) 대댓글 생성
+        serializer = CommentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        reply = serializer.save(
+            user=request.user,
+            post=post,
+            parent=parent
+        )
+
+        # 3) 게시글 댓글 수 업데이트
+        post.comment_count = F('comment_count') + 1
+        post.save(update_fields=['comment_count'])
+        post.refresh_from_db(fields=['comment_count'])
+
+        # 4) 생성된 대댓글 반환
+        return Response(
+            CommentDetailSerializer(reply).data,
+            status=status.HTTP_201_CREATED
+        )

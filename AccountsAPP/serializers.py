@@ -127,11 +127,19 @@ class CommunityPostListSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
-        fields = ['content']  # 작성 시 필요 입력 필드
+        fields = ['content']
+
 
 class CommentDetailSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
+    replies = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
-        fields = ['id', 'user', 'content', 'created_at']
+        fields = ['id', 'user', 'content', 'created_at', 'replies']
+
+    def get_replies(self, obj):
+        # obj.replies 는 related_name='replies' 로 연결된 QuerySet
+        qs = obj.replies.all()
+        # many=True 로 자기 자신을 재귀 호출
+        return CommentDetailSerializer(qs, many=True, context=self.context).data

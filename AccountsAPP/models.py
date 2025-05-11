@@ -3,6 +3,8 @@ from django.db import models
 
 class CustomUser(AbstractUser):
     profile_image = models.URLField(blank=True, null=True)
+    badge_image = models.URLField(blank=True, null=True)
+    points = models.IntegerField(blank=True, null=True)
     name = models.CharField(max_length=30, blank=True, null=True)  # 사용자 이름
     city = models.CharField(max_length=50, blank=True, null=True)  # 예: 서울시
     district = models.CharField(max_length=50, blank=True, null=True)  # 예: 마포구
@@ -98,6 +100,7 @@ class Comment(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='replies')  # null 이면 최상위 댓글, 다른 댓글이 이 필드에 연결되어 있으면 답글
 
     # 비정규화 필드
     like_count = models.PositiveIntegerField(default=0)
