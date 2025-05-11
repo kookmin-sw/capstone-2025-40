@@ -103,6 +103,13 @@ class Comment(models.Model):
     like_count = models.PositiveIntegerField(default=0)
     report_count = models.PositiveIntegerField(default=0)
 
+# 이미지 관리 모델
+class PostImage(models.Model):
+    post = models.ForeignKey(CommunityPost, on_delete=models.CASCADE, related_name='images')
+    image_url = models.URLField()
+
+    def __str__(self):
+        return f"{self.post.id} – {self.image_url}"
 
 # 좋아요
 class PostLike(models.Model):

@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import generics, permissions, status
-from .models import UserQuestAssignment, UserQuestResult, Tip, Comment
+from .models import UserQuestAssignment, UserQuestResult, Tip, Comment, PostImage
 from .serializers import UserSignupSerializer, UsernameLoginSerializer, UserQuestAssignmentSerializer, \
     UserQuestResultSerializer, CommunityPostListSerializer, CommunityPostDetailSerializer, CommentSerializer, \
     CommentDetailSerializer
@@ -304,14 +304,22 @@ class CommunityPostListCreateView(APIView):
     )
     def post(self, request):
         post_data = request.data.copy()
+        image_urls = post_data.pop('images', [])
         campaign_data = post_data.pop('campaign_data', None)
 
-        # Step 1: 기본 게시글 저장
+        if len(image_urls) > 5:
+            raise ValidationError({"images": "최대 5장까지만 업로드할 수 있습니다."})
+
+        # 1) 기본 게시글 저장
         post_serializer = CommunityPostSerializer(data=post_data)
         post_serializer.is_valid(raise_exception=True)
         post = post_serializer.save(user=request.user)
 
-        # Step 2: 캠페인인 경우 추가 저장
+        # 2) 이미지 저장
+        for url in image_urls:
+            PostImage.objects.create(post=post, image_url=url)
+
+        # 3) 캠페인 처리
         if post.post_type == 'campaign':
             if not campaign_data:
                 raise ValidationError({"campaign_data": "캠페인 정보가 필요합니다."})
