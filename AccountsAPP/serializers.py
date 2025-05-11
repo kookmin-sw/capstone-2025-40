@@ -1,6 +1,6 @@
 from django.utils.text import Truncator
 from rest_framework import serializers
-from .models import CustomUser, CommunityPost, Campaign, Comment
+from .models import UserQuestAssignment, UserQuestResult, CustomUser, CommunityPost, Campaign, Comment, PostImage
 from django.contrib.auth.hashers import make_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -28,9 +28,6 @@ class UsernameLoginSerializer(TokenObtainPairSerializer):
         return data
 
 
-from rest_framework import serializers
-from .models import UserQuestAssignment, UserQuestResult
-
 # 오늘의 퀘스트 목록용 Serializer
 class UserQuestAssignmentSerializer(serializers.ModelSerializer):
     quest_title = serializers.CharField(source='quest.title')
@@ -56,12 +53,23 @@ class UserQuestResultSerializer(serializers.ModelSerializer):
         fields = ['photo_url']
 
 
+class PostImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostImage
+        fields = ['image_url']
 
-# serializers.py
+
 class CommunityPostSerializer(serializers.ModelSerializer):
+    images = serializers.ListField(
+        child=serializers.URLField(),
+        write_only=True,
+        required=False,
+        help_text="최대 5개의 이미지 URL"
+    )
+
     class Meta:
         model = CommunityPost
-        fields = ['title', 'content', 'post_type']
+        fields = ['title', 'content', 'post_type', 'images']
 
 
 class CampaignSerializer(serializers.ModelSerializer):
@@ -75,13 +83,14 @@ class CampaignSerializer(serializers.ModelSerializer):
 class CommunityPostDetailSerializer(serializers.ModelSerializer):
     # post_type이 'campaign'일 때 post.campaign을 직렬화
     campaign = CampaignSerializer(read_only=True)
+    images = PostImageSerializer(many=True, read_only=True)
 
     class Meta:
         model = CommunityPost
         fields = [
             'id', 'user', 'title', 'content', 'post_type',
             'created_at', 'like_count', 'comment_count',
-            'campaign',
+            'campaign', 'images'
         ]
 
 
@@ -130,6 +139,7 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ['content']
 
 
+
 class CommentDetailSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
     replies = serializers.SerializerMethodField()
@@ -143,3 +153,5 @@ class CommentDetailSerializer(serializers.ModelSerializer):
         qs = obj.replies.all()
         # many=True 로 자기 자신을 재귀 호출
         return CommentDetailSerializer(qs, many=True, context=self.context).data
+
+
