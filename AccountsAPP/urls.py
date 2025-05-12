@@ -1,7 +1,8 @@
 from django.urls import path
 from .views import UserSignupView, UsernameLoginView, TodayAssignedQuestsView, UserQuestResultCreateView, RandomTipView, \
     TodayQuestSummaryView, ChallengeStatsAPIView, DuplicateCheckAPIView, \
-    CommunityPostDetailView, CommunityPostListCreateView, CommentCreateView, CommentDeleteView
+    CommunityPostDetailView, CommunityPostListCreateView, CommentListCreateView, CommentDetailView, ReplyCreateView, \
+    CommentLikeToggleView, CommentReportCreateView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
@@ -14,8 +15,11 @@ urlpatterns = [
     path('my-quests/today/summary/', TodayQuestSummaryView.as_view(), name='today-quest-summary'),
     path('my-challenge-stats/', ChallengeStatsAPIView.as_view()),
     path('check-duplicate/', DuplicateCheckAPIView.as_view()),
-    path('community/posts/', CommunityPostListCreateView.as_view(), name='community-post-create'), # ?post_type=<타입>&page=<페이지 번호> 어떤 유형의 글인지 전체 조회 # ?mine=true 내 글조회
+    path('community/posts/', CommunityPostListCreateView.as_view(), name='community-post-create-list'), # ?post_type=<타입>&page=<페이지 번호> 어떤 유형의 글인지 전체 조회 # ?mine=true 내 글조회
     path('community/posts/<int:pk>/', CommunityPostDetailView.as_view(), name='community-post-detail'),
-    path('api/community/posts/<int:post_id>/comments/', CommentCreateView.as_view(), name='comment-create'),
-    path('api/community/posts/<int:post_id>/comments/<int:comment_id>/', CommentDeleteView.as_view(), name='comment-delete'),
+    path('community/posts/<int:post_id>/comments/', CommentListCreateView.as_view(), name='comment-create-list'),
+    path('community/posts/<int:post_id>/comments/<int:comment_id>/', CommentDetailView.as_view(), name='comment-detail'),
+    path('community/posts/<int:post_id>/comments/<int:parent_id>/replies/', ReplyCreateView.as_view(), name='reply-create'),
+    path('community/posts/<int:post_id>/comments/<int:comment_id>/like/', CommentLikeToggleView.as_view(), name='comment-like-toggle'),
+    path('community/posts/<int:post_id>/comments/<int:comment_id>/report/', CommentReportCreateView.as_view(), name='comment-report')
 ]

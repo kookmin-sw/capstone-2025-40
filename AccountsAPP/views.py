@@ -5,14 +5,15 @@ from django.utils.timezone import now
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.generics import ListAPIView
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import generics, permissions, status
-from .models import UserQuestAssignment, UserQuestResult, Tip, Comment
+from .models import UserQuestAssignment, UserQuestResult, Tip, Comment, PostImage, CommentLike, CommentReport
 from .serializers import UserSignupSerializer, UsernameLoginSerializer, UserQuestAssignmentSerializer, \
     UserQuestResultSerializer, CommunityPostListSerializer, CommunityPostDetailSerializer, CommentSerializer, \
-    CommentDetailSerializer
+    CommentDetailSerializer, CommentReportSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from datetime import date, timedelta
 
@@ -40,6 +41,7 @@ class TodayAssignedQuestsView(generics.ListAPIView):
             user=self.request.user,
             assigned_date=date.today()
         )
+
 
 
 # 퀘스트 인증 (사진 등록)
@@ -304,14 +306,22 @@ class CommunityPostListCreateView(APIView):
     )
     def post(self, request):
         post_data = request.data.copy()
+        image_urls = post_data.pop('images', [])
         campaign_data = post_data.pop('campaign_data', None)
 
-        # Step 1: 기본 게시글 저장
+        if len(image_urls) > 5:
+            raise ValidationError({"images": "최대 5장까지만 업로드할 수 있습니다."})
+
+        # 1) 기본 게시글 저장
         post_serializer = CommunityPostSerializer(data=post_data)
         post_serializer.is_valid(raise_exception=True)
         post = post_serializer.save(user=request.user)
 
-        # Step 2: 캠페인인 경우 추가 저장
+        # 2) 이미지 저장
+        for url in image_urls:
+            PostImage.objects.create(post=post, image_url=url)
+
+        # 3) 캠페인 처리
         if post.post_type == 'campaign':
             if not campaign_data:
                 raise ValidationError({"campaign_data": "캠페인 정보가 필요합니다."})
@@ -340,9 +350,19 @@ class CommunityPostDetailView(APIView):
         if post.user != request.user:
             raise PermissionDenied("본인 글만 수정할 수 있습니다.")
 
-        serializer = CommunityPostSerializer(post, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        data = request.data.copy()
+        image_urls = data.pop('images', None)
+
+        post_serializer = CommunityPostSerializer(post, data=data, partial=True)
+        post_serializer.is_valid(raise_exception=True)
+        post = post_serializer.save()
+
+        if image_urls is not None:
+            if len(image_urls) > 5:
+                raise ValidationError({"images": "최대 5장까지만 업로드할 수 있습니다."})
+            post.images.all().delete()  # 기존 이미지 전부 삭제
+            for url in image_urls:  # 새로운 URL로 다시 생성
+                PostImage.objects.create(post=post, image_url=url)
 
         # 캠페인일 경우 campaign 정보도 수정
         if post.post_type == "campaign" and "campaign_data" in request.data:
@@ -351,7 +371,7 @@ class CommunityPostDetailView(APIView):
             campaign_serializer.is_valid(raise_exception=True)
             campaign_serializer.save()
 
-        return Response(serializer.data)
+        return Response(CommunityPostDetailSerializer(post).data, status=200)
 
     # 삭제
     def delete(self, request, pk):
@@ -362,8 +382,19 @@ class CommunityPostDetailView(APIView):
         return Response(status=204)
 
 
-class CommentCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+class CommentListCreateView(APIView):
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated()]
+        return [AllowAny()]
+
+    def get(self, request, post_id):
+        post = get_object_or_404(CommunityPost, pk=post_id)
+        qs = post.comments.filter(parent__isnull=True).order_by('-created_at')  # 또는 '-created_at'
+        paginator = PageNumberPagination()
+        page = paginator.paginate_queryset(qs, request)
+        serializer = CommentDetailSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     def post(self, request, post_id):
         # 1) 대상 게시글 확인
@@ -385,12 +416,26 @@ class CommentCreateView(APIView):
         return Response(detail.data, status=status.HTTP_201_CREATED)
 
 
-class CommentDeleteView(APIView):
+class CommentDetailView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def get_comment(self, post_id, comment_id):
+        return get_object_or_404(Comment, pk=comment_id, post_id=post_id)
+
+    def patch(self, request, post_id, comment_id):
+        comment = self.get_comment(post_id, comment_id)
+        if comment.user != request.user:
+            raise PermissionDenied("본인 댓글만 수정할 수 있습니다.")
+
+        serializer = CommentSerializer(comment, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(CommentDetailSerializer(comment).data)
 
     def delete(self, request, post_id, comment_id):
         # 1) 대상 댓글 가져오기 (post_id 검증 포함)
-        comment = get_object_or_404(Comment, pk=comment_id, post_id=post_id)
+        comment = self.get_comment(post_id, comment_id)
         if comment.user != request.user:
             raise PermissionDenied("본인 댓글만 삭제할 수 있습니다.")
 
@@ -403,3 +448,73 @@ class CommentDeleteView(APIView):
 
         # 3) 삭제 성공 응답
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ReplyCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, post_id, parent_id):
+        # 1) 원본 게시글과 부모 댓글 확인
+        post = get_object_or_404(CommunityPost, pk=post_id)
+        parent = get_object_or_404(Comment, pk=parent_id, post=post)
+
+        # 2) 대댓글 생성
+        serializer = CommentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        reply = serializer.save(
+            user=request.user,
+            post=post,
+            parent=parent
+        )
+
+        # 3) 게시글 댓글 수 업데이트
+        post.comment_count = F('comment_count') + 1
+        post.save(update_fields=['comment_count'])
+        post.refresh_from_db(fields=['comment_count'])
+
+        # 4) 생성된 대댓글 반환
+        return Response(
+            CommentDetailSerializer(reply).data,
+            status=status.HTTP_201_CREATED
+        )
+
+
+class CommentLikeToggleView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, post_id, comment_id):
+        comment = get_object_or_404(Comment, pk=comment_id, post_id=post_id)
+
+        like_qs = CommentLike.objects.filter(comment=comment, user=request.user)
+        if like_qs.exists():
+            like_qs.delete()
+            liked = False
+        else:
+            CommentLike.objects.create(comment=comment, user=request.user)
+            liked = True
+
+        like_count = CommentLike.objects.filter(comment=comment).count()
+
+        return Response(
+            {"liked": liked, "like_count": like_count},
+            status=status.HTTP_200_OK
+        )
+
+
+class CommentReportCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, post_id, comment_id):
+        # 1) 댓글 존재 확인
+        comment = get_object_or_404(Comment, pk=comment_id, post_id=post_id)
+
+        # 2) 중복 신고 방지
+        if CommentReport.objects.filter(comment=comment, user=request.user).exists():
+            raise ValidationError("이미 신고한 댓글입니다.")
+
+        # 3) 신고 생성
+        serializer = CommentReportSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(comment=comment, user=request.user)
+
+        return Response({"reported": True}, status=status.HTTP_201_CREATED)
