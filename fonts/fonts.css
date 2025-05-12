@@ -1,0 +1,50 @@
+@font-face {
+    font-family: 'Pretendard';
+    src: url('./Pretendard-Regular.woff2') format('woff2'),
+         url('./Pretendard-Regular.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Pretendard';
+    src: url('./Pretendard-Medium.woff2') format('woff2'),
+         url('./Pretendard-Medium.woff') format('woff');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Pretendard';
+    src: url('./Pretendard-Bold.woff2') format('woff2'),
+         url('./Pretendard-Bold.woff') format('woff');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'MaruBuri';
+    src: url('../src/fonts/MaruBuriTTF/MaruBuri-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'MaruBuri';
+    src: url('../src/fonts/MaruBuriTTF/MaruBuri-SemiBold.ttf') format('truetype');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'MaruBuri';
+    src: url('../src/fonts/MaruBuriTTF/MaruBuri-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+} 
