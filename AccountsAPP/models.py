@@ -102,9 +102,6 @@ class Comment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='replies')  # null 이면 최상위 댓글, 다른 댓글이 이 필드에 연결되어 있으면 답글
 
-    # 비정규화 필드
-    like_count = models.PositiveIntegerField(default=0)
-    report_count = models.PositiveIntegerField(default=0)
 
 # 이미지 관리 모델
 class PostImage(models.Model):

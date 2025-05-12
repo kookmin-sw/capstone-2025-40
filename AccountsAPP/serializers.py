@@ -1,9 +1,15 @@
 from django.utils.text import Truncator
 from rest_framework import serializers
-from .models import UserQuestAssignment, UserQuestResult, CustomUser, CommunityPost, Campaign, Comment, PostImage
+from .models import UserQuestAssignment, UserQuestResult, CustomUser, CommunityPost, Campaign, Comment, PostImage, \
+    CommentReport
 from django.contrib.auth.hashers import make_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['username', 'name', 'profile_image', 'badge_image', 'points', 'city', 'district']
 
 class UserSignupSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -81,7 +87,7 @@ class CampaignSerializer(serializers.ModelSerializer):
 
 
 class CommunityPostDetailSerializer(serializers.ModelSerializer):
-    # post_type이 'campaign'일 때 post.campaign을 직렬화
+    user = UserProfileSerializer(read_only=True)
     campaign = CampaignSerializer(read_only=True)
     images = PostImageSerializer(many=True, read_only=True)
 
@@ -141,12 +147,13 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class CommentDetailSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField(read_only=True)
+    user = UserProfileSerializer(read_only=True)
     replies = serializers.SerializerMethodField()
+    like_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
-        fields = ['id', 'user', 'content', 'created_at', 'replies']
+        fields = ['id', 'user', 'content', 'created_at', 'like_count', 'replies']
 
     def get_replies(self, obj):
         # obj.replies 는 related_name='replies' 로 연결된 QuerySet
@@ -154,4 +161,12 @@ class CommentDetailSerializer(serializers.ModelSerializer):
         # many=True 로 자기 자신을 재귀 호출
         return CommentDetailSerializer(qs, many=True, context=self.context).data
 
+    def get_like_count(self, obj):
+        # CommentLike 테이블을 조회해서 동적으로 숫자 계산
+        return obj.likes.count()  # CommentLike 모델의 related_name='likes.
 
+
+class CommentReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommentReport
+        fields = ['reason', 'details']

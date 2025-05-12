@@ -13,7 +13,7 @@ from .models import (
     PostLike,
     PostScrap,
     CommentLike,
-    CommentReport,
+    CommentReport, PostImage,
 )
 
 
@@ -81,6 +81,11 @@ class CommentReportAdmin(admin.ModelAdmin):
     list_display = ['id', 'comment', 'user', 'reason', 'reported_at']
     list_filter = ['reason', 'reported_at']
     search_fields = ['comment__content', 'user__username']
+
+@admin.register(PostImage)
+class PostImageAdmin(admin.ModelAdmin):
+    list_display = ['post','image_url']
+    search_fields = ['post']
 
 
 admin.site.register(Quest)
