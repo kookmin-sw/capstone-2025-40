@@ -1,3 +1,7 @@
+from datetime import timedelta
+
+from django.conf import settings
+from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -139,18 +143,43 @@ class CommentLike(models.Model):
         unique_together = ('comment', 'user')  # 한 유저가 같은 댓글에 여러 번 좋아요
 
 # 댓글 신고
-class CommentReport(models.Model):
+class Report(models.Model):
     REPORT_REASONS = [
         ('spam', '스팸'),
         ('abuse', '욕설/비방'),
         ('other', '기타'),
     ]
-
-    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='reports')
+    post = models.ForeignKey('CommunityPost', null=True, blank=True, related_name='reports', on_delete=models.CASCADE)
+    comment = models.ForeignKey('Comment', null=True, blank=True, on_delete=models.CASCADE, related_name='reports')
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     reason = models.CharField(max_length=20, choices=REPORT_REASONS)
     details = models.TextField(blank=True)  # 추가 설명
     reported_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('comment', 'user')  # 한 유저가 같은 댓글에 중복 신고
+        unique_together = [
+            ('post', 'user'),
+            ('comment', 'user'),
+        ]  # 한 유저가 같은 댓글에 중복 신고
+
+
+class PasswordResetCode(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='reset_codes'
+    )
+    code = models.CharField(max_length=6)      # 6자리 숫자 코드
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_used = models.BooleanField(default=False)
+
+    @property
+    def is_expired(self):
+        # 생성 후 10분 이내만 유효
+
+        return timezone.now() > self.created_at + timedelta(minutes=10)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['user', 'code']),
+        ]

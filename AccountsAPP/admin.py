@@ -13,7 +13,7 @@ from .models import (
     PostLike,
     PostScrap,
     CommentLike,
-    CommentReport, PostImage,
+    Report, PostImage,
 )
 
 
@@ -21,15 +21,15 @@ from .models import (
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
-    list_display = ['username', 'email', 'name', 'city', 'district', 'is_staff', 'is_active']
+    list_display = ['username', 'email', 'name', 'city', 'district', 'points', 'is_staff', 'is_active']
     fieldsets = UserAdmin.fieldsets + (
-        ('Additional Info', {'fields': ('name', 'city', 'district', 'profile_image')}),
+        ('Additional Info', {'fields': ('name', 'city', 'district', 'profile_image', 'points')}),
     )
     add_fieldsets = UserAdmin.add_fieldsets + (
-        ('Additional Info', {'fields': ('name', 'city', 'district', 'profile_image')}),
+        ('Additional Info', {'fields': ('name', 'city', 'district', 'profile_image', 'points')}),
     )
-    search_fields = ['username', 'email', 'name', 'city', 'district']
-    list_filter = ['is_staff', 'is_active', 'city']
+    search_fields = ['username', 'email', 'name', 'city', 'district', 'points']
+    list_filter = ['is_staff', 'is_active', 'city', 'points']
 
 @admin.register(CommunityPost)
 class CommunityPostAdmin(admin.ModelAdmin):
@@ -76,9 +76,9 @@ class CommentLikeAdmin(admin.ModelAdmin):
     list_filter = ['liked_at']
     search_fields = ['comment__content', 'user__username']
 
-@admin.register(CommentReport)
+@admin.register(Report)
 class CommentReportAdmin(admin.ModelAdmin):
-    list_display = ['id', 'comment', 'user', 'reason', 'reported_at']
+    list_display = ['id', 'post', 'comment', 'user', 'reason', 'reported_at']
     list_filter = ['reason', 'reported_at']
     search_fields = ['comment__content', 'user__username']
 
