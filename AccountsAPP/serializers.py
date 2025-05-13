@@ -1,15 +1,16 @@
 from django.utils.text import Truncator
 from rest_framework import serializers
 from .models import UserQuestAssignment, UserQuestResult, CustomUser, CommunityPost, Campaign, Comment, PostImage, \
-    CommentReport
+    Report, CampaignParticipant
 from django.contrib.auth.hashers import make_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.contrib.auth import get_user_model
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['username', 'name', 'profile_image', 'badge_image', 'points', 'city', 'district']
+        fields = ['username', 'name', 'profile_image', 'badge_image', 'points', 'city', 'district', 'email']
 
 class UserSignupSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -22,6 +23,20 @@ class UserSignupSerializer(serializers.ModelSerializer):
         validated_data['password'] = make_password(validated_data['password'])
         return super().create(validated_data)
 
+
+
+User = get_user_model()
+
+class FindUsernameSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+class PasswordResetCodeRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+class PasswordResetWithCodeSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.CharField(max_length=6)
+    new_password = serializers.CharField(write_only=True)
 
 
 class UsernameLoginSerializer(TokenObtainPairSerializer):
@@ -59,6 +74,24 @@ class UserQuestResultSerializer(serializers.ModelSerializer):
         fields = ['photo_url']
 
 
+class UserRankingSerializer(serializers.ModelSerializer):
+    rank = serializers.IntegerField(read_only=True)
+    is_self = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'id', 'username', 'name', 'profile_image', 'badge_image',
+            'points', 'city', 'district', 'rank', 'is_self'
+        ]
+
+    def get_is_self(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.pk == request.user.pk
+        return False
+
+
 class PostImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostImage
@@ -91,12 +124,17 @@ class CommunityPostDetailSerializer(serializers.ModelSerializer):
     campaign = CampaignSerializer(read_only=True)
     images = PostImageSerializer(many=True, read_only=True)
 
+    is_owner = serializers.BooleanField(read_only=True)
+    has_liked = serializers.BooleanField(read_only=True)
+    has_scrapped = serializers.BooleanField(read_only=True)
+    has_participated = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = CommunityPost
         fields = [
             'id', 'user', 'title', 'content', 'post_type',
-            'created_at', 'like_count', 'comment_count',
-            'campaign', 'images'
+            'created_at', 'like_count', 'comment_count', 'scrap_count',
+            'is_owner','has_liked','has_scrapped','has_participated','campaign', 'images'
         ]
 
 
@@ -151,22 +189,33 @@ class CommentDetailSerializer(serializers.ModelSerializer):
     replies = serializers.SerializerMethodField()
     like_count = serializers.SerializerMethodField()
 
+    is_my_comment = serializers.BooleanField(read_only=True)
+    is_my_reply = serializers.BooleanField(read_only=True)
+    has_liked_comment = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = Comment
-        fields = ['id', 'user', 'content', 'created_at', 'like_count', 'replies']
+        fields = ['id', 'user', 'content', 'created_at', 'like_count', 'is_my_comment','is_my_reply','has_liked_comment', 'replies']
 
     def get_replies(self, obj):
-        # obj.replies 는 related_name='replies' 로 연결된 QuerySet
-        qs = obj.replies.all()
-        # many=True 로 자기 자신을 재귀 호출
+        qs = getattr(obj, 'annotated_replies', [])
         return CommentDetailSerializer(qs, many=True, context=self.context).data
 
+
     def get_like_count(self, obj):
-        # CommentLike 테이블을 조회해서 동적으로 숫자 계산
-        return obj.likes.count()  # CommentLike 모델의 related_name='likes.
+            # CommentLike 테이블을 조회해서 동적으로 숫자 계산
+            return obj.likes.count()  # CommentLike 모델의 related_name='likes.
 
 
-class CommentReportSerializer(serializers.ModelSerializer):
+class ReportSerializer(serializers.ModelSerializer):
     class Meta:
-        model = CommentReport
+        model = Report
         fields = ['reason', 'details']
+
+
+class CampaignParticipantSerializer(serializers.ModelSerializer):
+    user = UserProfileSerializer(read_only=True)
+
+    class Meta:
+        model = CampaignParticipant
+        fields = ['user', 'joined_at']
