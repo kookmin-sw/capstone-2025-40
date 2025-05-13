@@ -41,13 +41,25 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
 }
 
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=90),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
 }
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+
+# 발송 전용 Gmail 계정
+EMAIL_HOST_USER = env('GMAIL_ADDRESS')        # 예: 'no-reply@your-domain.com' 알리아스로 포워딩 설정해도 OK
+EMAIL_HOST_PASSWORD = env('GMAIL_APP_PASSWORD')  # 2단계 인증 후 만든 앱 비밀번호
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
 # Application definition
@@ -60,6 +72,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'drf_yasg',
     'AccountsAPP',
     'QuestAPP',
 ]
