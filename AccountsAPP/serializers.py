@@ -1,5 +1,7 @@
 from django.utils.text import Truncator
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
+
 from .models import UserQuestAssignment, UserQuestResult, CustomUser, CommunityPost, Campaign, Comment, PostImage, \
     Report, CampaignParticipant
 from django.contrib.auth.hashers import make_password
@@ -10,14 +12,22 @@ from django.contrib.auth import get_user_model
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['username', 'name', 'profile_image', 'badge_image', 'points', 'city', 'district', 'email']
+        fields = ['username', 'name', 'nickname', 'profile_image', 'badge_image', 'points', 'city', 'district', 'email']
 
 class UserSignupSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        validators=[
+            UniqueValidator(
+                queryset=CustomUser.objects.all(),
+                message="이미 사용 중인 이메일입니다."
+            )
+        ]
+    )
     password = serializers.CharField(write_only=True)
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'email', 'password', 'name', 'city', 'district']
+        fields = ['id', 'username','nickname', 'email', 'password', 'name', 'city', 'district']
 
     def create(self, validated_data):
         validated_data['password'] = make_password(validated_data['password'])
@@ -81,7 +91,7 @@ class UserRankingSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'name', 'profile_image', 'badge_image',
+            'id', 'username','nickname', 'name', 'profile_image', 'badge_image',
             'points', 'city', 'district', 'rank', 'is_self'
         ]
 
