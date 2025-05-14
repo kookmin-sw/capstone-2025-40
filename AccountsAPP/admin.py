@@ -88,7 +88,11 @@ class PostImageAdmin(admin.ModelAdmin):
     search_fields = ['post']
 
 
+@admin.register(UserQuestResult)
+class UserQuestResultAdmin(admin.ModelAdmin):
+    list_display = ['assignment','photo_url', 'completed_at']
+    search_fields = ['completed_at']
+
 admin.site.register(Quest)
 admin.site.register(UserQuestAssignment)
-admin.site.register(UserQuestResult)
 admin.site.register(Tip)
