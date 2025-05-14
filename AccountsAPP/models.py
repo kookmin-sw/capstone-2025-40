@@ -5,6 +5,15 @@ from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+
+######################################################### PWA 알림
+class FCMDevice(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    registration_token = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+#########################################################
+
 class CustomUser(AbstractUser):
     nickname = models.CharField(max_length=50, blank=True, null=True)
     profile_image = models.URLField(blank=True, null=True)
