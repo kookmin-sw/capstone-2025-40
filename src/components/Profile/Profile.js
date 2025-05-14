@@ -1,6 +1,9 @@
 import React, {useState, useEffect, useRef, useCallback} from "react";
 import {useDispatch} from "react-redux";
 import {logout} from "../../redux/slices/authSlice";
+import imageCompression from "browser-image-compression";
+import {ref, uploadBytes, getDownloadURL} from "firebase/storage";
+import {storage} from "../../firebase";
 import {
 	Box,
 	Typography,
@@ -20,6 +23,8 @@ import {
 	DialogTitle,
 	DialogContent,
 	Grid,
+	CircularProgress,
+	Menu,
 } from "@mui/material";
 import {AdapterDateFns} from "@mui/x-date-pickers/AdapterDateFns";
 import {LocalizationProvider} from "@mui/x-date-pickers";
@@ -54,6 +59,7 @@ const CustomDay = (props) => {
 const Profile = () => {
 	const navigate = useNavigate();
 	const [nickname, setNickname] = useState("");
+	const [username, setUsername] = useState("");
 	const [editingNickname, setEditingNickname] = useState(false);
 	const [profileImage, setProfileImage] = useState(null);
 	const [highlightedDays, setHighlightedDays] = useState([2, 4, 5]);
@@ -63,19 +69,27 @@ const Profile = () => {
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [passwordError, setPasswordError] = useState("");
+	// Password reset states
+	const [step, setStep] = useState("request");
+	const [code, setCode] = useState("");
+	const [newPassword, setNewPassword] = useState("");
+	const [timer, setTimer] = useState(600);
+	const [resultMessage, setResultMessage] = useState("");
+	const [email, setEmail] = useState("");
 	const [realName, setRealName] = useState("");
 	const [city, setCity] = useState("");
 	const [district, setDistrict] = useState("");
 	const [isEditingArea, setIsEditingArea] = useState(false);
 	const dispatch = useDispatch();
+	// Profile image menu state
+	const [anchorEl, setAnchorEl] = useState(null);
+	const openMenu = Boolean(anchorEl);
 
 	// 모달 상태
 	const [openPasswordModal, setOpenPasswordModal] = useState(false);
 	const [openEmailModal, setOpenEmailModal] = useState(false);
 
-	const [selectedBadge, setSelectedBadge] = useState(
-		"https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge100.png?alt=media&token=8f125eb9-814f-4300-809c-1ab75049d7ee"
-	);
+	const [selectedBadge, setSelectedBadge] = useState();
 	const [openBadgeModal, setOpenBadgeModal] = useState(false);
 	const [point, setPoint] = useState(0);
 	const fetchUserProfile = useCallback(async () => {
@@ -85,12 +99,13 @@ const Profile = () => {
 			setRealName(res.data.name);
 			setProfileImage(
 				res.data.profile_image ||
-					"https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge100.png?alt=media&token=8f125eb9-814f-4300-809c-1ab75049d7ee"
+					"https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/profile-images%2FGreenDayProfile.png?alt=media&token=dc457190-a5f4-4ea9-be09-39a31aafef7c"
 			);
 			setSelectedBadge(res.data.badge_image || "");
 			setPoint(res.data.points ?? 0);
 			setCity(res.data.city);
 			setDistrict(res.data.district);
+			setUsername(res.data.username);
 		} catch (error) {
 			console.error("프로필 정보 불러오기 실패:", error);
 		}
@@ -148,17 +163,45 @@ const Profile = () => {
 	};
 
 	const handleNicknameChange = (e) => setNickname(e.target.value);
-	const handleNicknameSave = () => {
+	const handleNicknameSave = async () => {
 		const confirmSave = window.confirm("닉네임을 저장하시겠습니까?");
-		setEditingNickname(false);
+		if (!confirmSave) return;
+
+		try {
+			await axiosInstance.patch("/users/profile/my/", {
+				nickname: nickname,
+			});
+		} catch (error) {
+			console.error("닉네임 저장 실패:", error);
+		} finally {
+			setEditingNickname(false);
+		}
 	};
 
-	const handleProfileImageChange = (e) => {
+	const handleProfileImageChange = async (e) => {
 		const file = e.target.files[0];
-		if (file) {
-			const reader = new FileReader();
-			reader.onload = (event) => setProfileImage(event.target.result);
-			reader.readAsDataURL(file);
+		if (!file) return;
+
+		try {
+			const {user_id, username} = JSON.parse(localStorage.getItem("user"));
+			const filename = `${user_id}-${username}-profileimage-${Date.now()}`;
+			const fileRef = ref(storage, `profile-images/${filename}`);
+			const options = {
+				maxSizeMB: 0.5,
+				maxWidthOrHeight: 1024,
+				useWebWorker: true,
+			};
+
+			const compressedFile = await imageCompression(file, options);
+			await uploadBytes(fileRef, compressedFile);
+			const downloadURL = await getDownloadURL(fileRef);
+			setProfileImage(downloadURL);
+
+			await axiosInstance.patch("/users/profile/my/", {
+				profile_image: downloadURL,
+			});
+		} catch (error) {
+			console.error("프로필 이미지 업로드 실패:", error);
 		}
 	};
 
@@ -208,16 +251,55 @@ const Profile = () => {
 		fetchChallengeDates(date);
 	};
 
-	const handlePasswordSave = () => {
-		if (password !== confirmPassword) {
-			setPasswordError("비밀번호가 일치하지 않습니다.");
-			return;
+	// Password reset logic
+	useEffect(() => {
+		let interval;
+		if (step === "reset" && timer > 0) {
+			interval = setInterval(() => {
+				setTimer((prev) => prev - 1);
+			}, 1000);
 		}
-		// 일치할 경우 초기화 및 모달 닫기
-		setPasswordError("");
-		setPassword("");
-		setConfirmPassword("");
-		setOpenPasswordModal(false);
+		return () => clearInterval(interval);
+	}, [step, timer]);
+
+	const handlePasswordSave = async () => {
+		if (step === "request") {
+			if (!email) {
+				setResultMessage("이메일을 입력해주세요.");
+				return;
+			}
+			setIsLoading(true);
+			try {
+				const res = await axiosInstance.post("/users/auth/password/reset/code/", {email});
+				setResultMessage(res.data.detail || "인증번호를 전송했습니다.");
+				setStep("reset");
+				setTimer(600);
+			} catch (err) {
+				setResultMessage("인증번호 요청에 실패했습니다.");
+			} finally {
+				setIsLoading(false);
+			}
+		} else {
+			if (!code || !newPassword) {
+				setResultMessage("모든 필드를 입력해주세요.");
+				return;
+			}
+			setIsLoading(true);
+			try {
+				const res = await axiosInstance.post("/users/auth/password/reset/confirm-code/", {
+					email,
+					code,
+					new_password: newPassword,
+				});
+				alert("비밀번호가 변경되었습니다.");
+				setOpenPasswordModal(false);
+			} catch (err) {
+				const msg = err.response?.data?.detail || "비밀번호 재설정 실패";
+				setResultMessage(msg);
+			} finally {
+				setIsLoading(false);
+			}
+		}
 	};
 
 	const handleLogout = () => {
@@ -234,11 +316,40 @@ const Profile = () => {
 			<Box className={styles.profileHeader}>
 				<Paper elevation={3} className={styles.profilePaper}>
 					<Box className={styles.avatarWrapper}>
-						<IconButton component='label' className={styles.avatarButton}>
+						<IconButton className={styles.avatarButton} onClick={(e) => setAnchorEl(e.currentTarget)}>
 							<Avatar src={profileImage} className={styles.avatar} sx={{height: "100%", width: "100%"}} />
-							<input type='file' hidden accept='image/*' onChange={handleProfileImageChange} />
 							<EditIcon className={styles.avatarEditIcon} fontSize='small' />
 						</IconButton>
+						{/* Hidden file input for profile image upload */}
+						<input type='file' hidden accept='image/*' id='profile-upload' onChange={handleProfileImageChange} />
+						{/* Profile image context menu */}
+						<Menu anchorEl={anchorEl} open={openMenu} onClose={() => setAnchorEl(null)}>
+							<MenuItem
+								onClick={async () => {
+									setAnchorEl(null);
+									const confirmReset = window.confirm("기본 이미지로 변경하시겠습니까?");
+									if (!confirmReset) return;
+									try {
+										await axiosInstance.patch("/users/profile/my/", {
+											profile_image: null,
+										});
+										setProfileImage(
+											"https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/profile-images%2FGreenDayProfile.png?alt=media&token=dc457190-a5f4-4ea9-be09-39a31aafef7c"
+										);
+									} catch (error) {
+										console.error("기본 이미지 변경 실패:", error);
+									}
+								}}>
+								기본 이미지로 변경
+							</MenuItem>
+							<MenuItem
+								onClick={() => {
+									setAnchorEl(null);
+									document.getElementById("profile-upload").click();
+								}}>
+								앨범에서 선택
+							</MenuItem>
+						</Menu>
 					</Box>
 					{editingNickname ? (
 						<Box className={styles.nicknameEdit}>
@@ -381,10 +492,18 @@ const Profile = () => {
 
 						{isEditingArea ? (
 							<Button
-								onClick={() => {
+								onClick={async () => {
 									const confirmSave = window.confirm("지역을 저장하시겠습니까?");
 									if (confirmSave) {
-										setIsEditingArea(false);
+										try {
+											await axiosInstance.patch("/users/profile/my/", {
+												city,
+												district,
+											});
+											setIsEditingArea(false);
+										} catch (error) {
+											console.error("지역 저장 실패:", error);
+										}
 									}
 								}}
 								variant='text'
@@ -411,7 +530,7 @@ const Profile = () => {
 						<Box display='flex' justifyContent='space-between' alignItems='center' width='100%'>
 							<Typography variant='body1'>아이디</Typography>
 							<Typography variant='body2' color='text.secondary'>
-								green_user_01
+								{username}
 							</Typography>
 						</Box>
 					</ListItem>
@@ -438,28 +557,55 @@ const Profile = () => {
 					<Typography className={styles.modalTitle}>비밀번호 설정</Typography>
 					<Box className={styles.modalContent}>
 						<TextField
-							type='password'
-							label='비밀번호'
+							type='email'
+							label='이메일'
 							variant='standard'
 							color='success'
 							fullWidth
-							value={password}
-							onChange={(e) => setPassword(e.target.value)}
+							value={email}
+							onChange={(e) => setEmail(e.target.value)}
+							sx={{mb: 1}}
 						/>
-						<TextField
-							type='password'
-							label='비밀번호 확인'
-							variant='standard'
-							color='success'
-							fullWidth
-							value={confirmPassword}
-							onChange={(e) => setConfirmPassword(e.target.value)}
-							error={!!passwordError}
-							helperText={passwordError}
-						/>
-						<Button onClick={handlePasswordSave} className={styles.saveButton} fullWidth>
-							저장
+						{step === "reset" && (
+							<>
+								<TextField
+									label='인증번호'
+									variant='standard'
+									fullWidth
+									color='success'
+									margin='normal'
+									value={code}
+									onChange={(e) => setCode(e.target.value)}
+								/>
+								<TextField
+									label='새 비밀번호'
+									type='password'
+									variant='standard'
+									fullWidth
+									color='success'
+									margin='normal'
+									value={newPassword}
+									onChange={(e) => setNewPassword(e.target.value)}
+								/>
+								<Typography variant='body2' color='textSecondary'>
+									남은 시간: {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, "0")}
+								</Typography>
+							</>
+						)}
+						<Button onClick={handlePasswordSave} className={styles.saveButton} fullWidth disabled={isLoading}>
+							{isLoading ? (
+								<CircularProgress size={24} color='success' />
+							) : step === "request" ? (
+								"인증번호 요청"
+							) : (
+								"비밀번호 재설정"
+							)}
 						</Button>
+						{resultMessage && (
+							<Typography color='textSecondary' marginTop={2}>
+								{resultMessage}
+							</Typography>
+						)}
 					</Box>
 				</Box>
 			</Modal>
@@ -485,11 +631,19 @@ const Profile = () => {
 							.map((badge) => (
 								<Grid item xs={4} key={badge.point} sx={{display: "flex", justifyContent: "center"}}>
 									<IconButton
-										onClick={() => {
+										onClick={async () => {
 											const confirmChange = window.confirm("뱃지를 변경하시겠습니까?");
 											if (confirmChange) {
-												setSelectedBadge(badge.url);
-												setOpenBadgeModal(false);
+												const badgeValue = badge.url || null;
+												try {
+													await axiosInstance.patch("/users/profile/my/", {
+														badge_image: badgeValue,
+													});
+													setSelectedBadge(badgeValue);
+													setOpenBadgeModal(false);
+												} catch (error) {
+													console.error("뱃지 변경 실패:", error);
+												}
 											}
 										}}
 										sx={{flexDirection: "column"}}>
