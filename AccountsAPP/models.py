@@ -6,14 +6,13 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 class CustomUser(AbstractUser):
+    nickname = models.CharField(max_length=50, blank=True, null=True)
     profile_image = models.URLField(blank=True, null=True)
     badge_image = models.URLField(blank=True, null=True)
     points = models.IntegerField(blank=True, null=True)
     name = models.CharField(max_length=30, blank=True, null=True)  # 사용자 이름
     city = models.CharField(max_length=50, blank=True, null=True)  # 예: 서울시
     district = models.CharField(max_length=50, blank=True, null=True)  # 예: 마포구
-    # 시, 군 넣기
-    # 이름
 
 
     def __str__(self):
