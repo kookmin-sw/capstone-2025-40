@@ -3,11 +3,18 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
 from .models import UserQuestAssignment, UserQuestResult, CustomUser, CommunityPost, Campaign, Comment, PostImage, \
-    Report, CampaignParticipant
+    Report, CampaignParticipant, FCMDevice
 from django.contrib.auth.hashers import make_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
 
+
+######################################################### PWA 알림
+class FCMDeviceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FCMDevice
+        fields = ['registration_token']
+#########################################################
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:

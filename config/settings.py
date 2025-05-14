@@ -13,7 +13,8 @@ from pathlib import Path
 from datetime import timedelta
 import environ
 import os
-
+import firebase_admin
+from firebase_admin import credentials
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,6 +38,56 @@ DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
 
+################################################################## PWA알림 설정부
+# ─── 로깅용 디렉토리 생성 ─────────────────────────────
+LOG_DIR = BASE_DIR / 'logs'
+LOG_DIR.mkdir(exist_ok=True)
+# ─── LOGGING 설정 ─────────────────────────────────────
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] {levelname} [{name}] {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        # 1) 콘솔(=stdout, stderr) 출력용
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        # 2) 파일 기록용
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': str(LOG_DIR / 'django.log'),
+            'formatter': 'verbose',
+            'encoding': 'utf-8',
+        },
+    },
+    'root': {  # 루트 로거: 모든 로거가 이 핸들러를 상속받음
+        'handlers': ['console', 'file'],
+        'level': 'INFO',  # INFO 이상부터 기록
+    },
+    # notifications 모듈만 DEBUG 레벨로 더 자세히 보고 싶다면
+    'loggers': {
+        'your_app.utils.notifications': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+# ──────────────────────────────────────────────────────────────────────────
+FIREBASE_CERT_PATH = BASE_DIR / env('FIREBASE_CERT_PATH')
+
+if FIREBASE_CERT_PATH:
+    cred = credentials.Certificate(FIREBASE_CERT_PATH)
+    firebase_admin.initialize_app(cred)
+else:
+    raise RuntimeError("FIREBASE_CERT_PATH 환경변수가 설정되지 않았습니다.")
+###################################################################
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
