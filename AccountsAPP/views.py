@@ -19,20 +19,42 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError, PermissionDenied
-from .models import UserQuestAssignment, UserQuestResult, Tip, CommunityPost, Campaign, Comment, PostImage, CommentLike, Report, \
-    CampaignParticipant, PostScrap, PostLike, PasswordResetCode
+from .models import UserQuestAssignment, UserQuestResult, Tip, CommunityPost, Campaign, Comment, PostImage, CommentLike, \
+    Report, CampaignParticipant, PostScrap, PostLike, PasswordResetCode, FCMDevice
 from .pagination import RankingPagination
 from .serializers import UserSignupSerializer, UsernameLoginSerializer, UserQuestAssignmentSerializer, \
-    UserQuestResultSerializer, CommunityPostListSerializer, CommunityPostDetailSerializer, CommentSerializer, CommunityPostSerializer, CampaignSerializer,\
-    CommentDetailSerializer, ReportSerializer, CampaignParticipantSerializer, UserProfileSerializer, \
-    FindUsernameSerializer, PasswordResetCodeRequestSerializer, PasswordResetWithCodeSerializer, UserRankingSerializer
-
-
-
-
-
+    UserQuestResultSerializer, CommunityPostListSerializer, CommunityPostDetailSerializer, CommentSerializer, \
+    CommunityPostSerializer, CampaignSerializer, CommentDetailSerializer, ReportSerializer, CampaignParticipantSerializer, UserProfileSerializer, \
+    FindUsernameSerializer, PasswordResetCodeRequestSerializer, PasswordResetWithCodeSerializer, UserRankingSerializer, \
+    FCMDeviceSerializer
 
 User = get_user_model()
+
+
+######################################################### PWA 알림
+class FCMDeviceRegisterView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = FCMDeviceSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        FCMDevice.objects.update_or_create(
+            user=request.user,
+            registration_token=serializer.validated_data['registration_token']
+        )
+        return Response(status=201)
+
+
+class FCMDeviceUnregisterView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        token = request.data.get('registration_token')
+        FCMDevice.objects.filter(user=request.user, registration_token=token).delete()
+        return Response(status=204)
+
+#########################################################
+
 
 class UserSignupView(APIView):
     def post(self, request):
