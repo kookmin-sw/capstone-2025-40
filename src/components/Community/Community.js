@@ -12,6 +12,7 @@ import {
 	TextField,
 	InputAdornment,
 	CircularProgress,
+	Button,
 } from "@mui/material";
 import PullToRefresh from "../PullToRefresh/PullToRefresh";
 import EditIcon from "@mui/icons-material/Edit";
@@ -60,12 +61,13 @@ const Community = () => {
 		return saved ? Number(saved) : 0;
 	});
 	const [searchKeyword, setSearchKeyword] = useState("");
+	const [searchTrigger, setSearchTrigger] = useState(0);
 	const [refreshKey, setRefreshKey] = useState(0); // 새로고침용 키
 
 	const [initialLoading, setInitialLoading] = useState(false);
 
-	const normalize = (str) => str.replace(/\s/g, "").toLowerCase();
-	const keyword = normalize(searchKeyword);
+	// const normalize = (str) => str.replace(/\s/g, "").toLowerCase();
+	// const keyword = normalize(searchKeyword);
 	const [isVerticalScroll, setIsVerticalScroll] = useState(true);
 	const touchStartRef = useRef({x: 0, y: 0});
 	const swipeWrapperRef = useRef(null);
@@ -81,7 +83,13 @@ const Community = () => {
 			const post_type = tabKeys[tabIndex];
 			try {
 				setInitialLoading(true);
-				const res = await axiosInstance.get(`/users/community/posts/?post_type=${post_type}&page=1`);
+				const res = await axiosInstance.get(`/users/community/posts/`, {
+					params: {
+						post_type,
+						page: 1,
+						search: searchKeyword.trim(),
+					},
+				});
 				setPostData((prev) => ({...prev, [post_type]: res.data.results}));
 				setNextPageUrl((prev) => ({...prev, [post_type]: res.data.next}));
 			} catch (err) {
@@ -91,7 +99,7 @@ const Community = () => {
 			}
 		};
 		fetchPosts();
-	}, [tabIndex]);
+	}, [tabIndex, searchTrigger]);
 
 	useEffect(() => {
 		const handleScroll = async (e) => {
@@ -137,23 +145,23 @@ const Community = () => {
 		}
 	}, [tabIndex, nextPageUrl, loadingMore]);
 
-	const filteredPosts = {
-		campaign: postData.campaign.filter((p) => {
-			const title = normalize(p.title || "");
-			const content = normalize(p.content || p.excerpt || "");
-			return title.includes(keyword) || content.includes(keyword);
-		}),
-		free: postData.free.filter((p) => {
-			const title = normalize(p.title || "");
-			const content = normalize(p.content || p.excerpt || "");
-			return title.includes(keyword) || content.includes(keyword);
-		}),
-		info: postData.info.filter((p) => {
-			const title = normalize(p.title || "");
-			const content = normalize(p.content || p.excerpt || "");
-			return title.includes(keyword) || content.includes(keyword);
-		}),
-	};
+	// const filteredPosts = {
+	// 	campaign: postData.campaign.filter((p) => {
+	// 		const title = normalize(p.title || "");
+	// 		const content = normalize(p.content || p.excerpt || "");
+	// 		return title.includes(keyword) || content.includes(keyword);
+	// 	}),
+	// 	free: postData.free.filter((p) => {
+	// 		const title = normalize(p.title || "");
+	// 		const content = normalize(p.content || p.excerpt || "");
+	// 		return title.includes(keyword) || content.includes(keyword);
+	// 	}),
+	// 	info: postData.info.filter((p) => {
+	// 		const title = normalize(p.title || "");
+	// 		const content = normalize(p.content || p.excerpt || "");
+	// 		return title.includes(keyword) || content.includes(keyword);
+	// 	}),
+	// };
 
 	const handleRefresh = async () => {
 		const post_type = tabKeys[tabIndex];
@@ -211,7 +219,7 @@ const Community = () => {
 				</Tabs>
 			</Box>
 
-			<Box sx={{marginTop: "20px"}}>
+			<Box sx={{display: "flex", marginTop: "20px"}}>
 				<TextField
 					fullWidth
 					size='small'
@@ -228,6 +236,12 @@ const Community = () => {
 					}}
 					variant='outlined'
 				/>
+				<Button
+					variant='contained'
+					sx={{ml: 1, backgroundColor: "#66bb6a"}}
+					onClick={() => setSearchTrigger((prev) => prev + 1)}>
+					검색
+				</Button>
 			</Box>
 			<PullToRefresh onRefresh={handleRefresh} disabled={!isVerticalScroll}>
 				<Box
@@ -255,7 +269,7 @@ const Community = () => {
 										</Box>
 									) : postData[key].length === 0 ? null : (
 										<>
-											{filteredPosts[key].map((post) => (
+											{postData[key].map((post) => (
 												<Paper key={post.id} elevation={3} className={styles.paperItem}>
 													<ListItemButton
 														onClick={() => handlePostClick(post)}
