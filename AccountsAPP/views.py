@@ -27,6 +27,7 @@ from .serializers import UserSignupSerializer, UsernameLoginSerializer, UserQues
     CommunityPostSerializer, CampaignSerializer, CommentDetailSerializer, ReportSerializer, CampaignParticipantSerializer, UserProfileSerializer, \
     FindUsernameSerializer, PasswordResetCodeRequestSerializer, PasswordResetWithCodeSerializer, UserRankingSerializer, \
     FCMDeviceSerializer
+from .utils.notifications import send_push_to_user
 
 User = get_user_model()
 
@@ -239,6 +240,14 @@ class UserQuestResultCreateView(APIView):
         )
         assignment.is_completed = True
         assignment.save()
+
+        # 테스트용 FCM 푸시 전송
+        send_push_to_user(
+            request.user,
+            title='🎉 퀘스트 인증 완료!',
+            body=f'"{assignment.quest.title}" 퀘스트 인증이 완료되었습니다.',
+            data={'click_action': f'/quests/{assignment.id}/result'}
+        )
 
         return Response({'message': '퀘스트 인증 완료!'}, status=status.HTTP_201_CREATED)
 
