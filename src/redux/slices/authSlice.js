@@ -1,7 +1,6 @@
 import {createSlice, createAsyncThunk} from "@reduxjs/toolkit";
 import axiosInstance from "../../axiosInstance";
 
-// Load user from localStorage if autoLogin is set
 const storedUser = localStorage.getItem("user");
 const storedAutoLogin = localStorage.getItem("autoLogin");
 const initialState = {
@@ -10,6 +9,7 @@ const initialState = {
 	error: null,
 };
 
+// 회원가입 요청 thunk
 export const signup = createAsyncThunk("auth/signup", async (formData, {rejectWithValue}) => {
 	try {
 		const response = await axiosInstance.post(`/users/signup/`, formData);

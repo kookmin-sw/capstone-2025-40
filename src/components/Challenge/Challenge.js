@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useCallback} from "react";
 import {Box, Typography, LinearProgress, CircularProgress, Paper} from "@mui/material";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
@@ -26,24 +26,21 @@ const Challenge = () => {
 	const [participantAnchorEl, setParticipantAnchorEl] = useState(null);
 	const participantOpen = Boolean(participantAnchorEl);
 
-	const personalRankData = [
-		{name: "성창민", score: 1505, rank: 11},
-		{name: "박상엄", score: 1500, rank: 12},
-		{name: "정하랑", score: 1495, rank: 13},
-		{name: "채주원", score: 1455, rank: 14},
-		{name: "나", score: 1450, rank: 15},
-		{name: "캡스톤", score: 1400, rank: 16},
-		{name: "국민대학교", score: 1335, rank: 17},
-	];
-
-	const localRankData = [
-		{name: "성북구 주민1", score: 1510, rank: 1},
-		{name: "나", score: 1450, rank: 2},
-		{name: "성북구 주민2", score: 1305, rank: 3},
-		{name: "성북구 주민3", score: 1005, rank: 4},
-		{name: "성북구 주민5", score: 1000, rank: 5},
-		{name: "성북구 주민6", score: 990, rank: 6},
-	];
+	const [personalRankData, setPersonalRankData] = useState([]);
+	const [localRankData, setLocalRankData] = useState([]);
+	const fetchLocalRanking = useCallback(async () => {
+		try {
+			const res = await axiosInstance.get("/users/rankings/local/");
+			const formatted = res.data.results.map((user) => ({
+				name: user.nickname,
+				score: user.points,
+				rank: user.rank,
+			}));
+			setLocalRankData(formatted);
+		} catch (error) {
+			console.error("동네 랭킹 데이터 불러오기 실패:", error);
+		}
+	}, []);
 
 	const fetchStats = async () => {
 		try {
@@ -73,9 +70,25 @@ const Challenge = () => {
 		}
 	};
 
+	const fetchPersonalRanking = useCallback(async () => {
+		try {
+			const res = await axiosInstance.get("/users/rankings/global/");
+			const formatted = res.data.results.map((user) => ({
+				name: user.nickname,
+				score: user.points,
+				rank: user.rank,
+			}));
+			setPersonalRankData(formatted);
+		} catch (error) {
+			console.error("개인 랭킹 데이터 불러오기 실패:", error);
+		}
+	}, []);
+
 	useEffect(() => {
 		fetchStats();
-	}, []);
+		fetchPersonalRanking();
+		fetchLocalRanking();
+	}, [fetchPersonalRanking, fetchLocalRanking]);
 
 	const openModal = (title, data) => {
 		setModalTitle(title);
@@ -147,7 +160,7 @@ const Challenge = () => {
 					<Box className={styles.dualBarWrapper}>
 						{/* 최대 연속 일수 */}
 						<Box className={styles.barItem}>
-							<Typography className={styles.barTitle}>최대 연속 일수</Typography>
+							<Typography className={styles.barTitle}>현재 연속 일수</Typography>
 							{loading ? (
 								<Box display='flex' justifyContent='center' alignItems='center' height={150}>
 									<CircularProgress color='success' />

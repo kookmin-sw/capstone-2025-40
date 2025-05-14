@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from "react";
+import React, {useState, useEffect, useRef, useCallback} from "react";
 import {useDispatch} from "react-redux";
 import {logout} from "../../redux/slices/authSlice";
 import {
@@ -29,7 +29,7 @@ import {DayCalendarSkeleton} from "@mui/x-date-pickers/DayCalendarSkeleton";
 import isSameDay from "date-fns/isSameDay";
 import subDays from "date-fns/subDays";
 import {ko} from "date-fns/locale";
-import defaultProfile from "../../assets/default-profile.png";
+import axiosInstance from "../../axiosInstance";
 import styles from "./Profile.module.css";
 import {useNavigate} from "react-router-dom";
 import EditIcon from "@mui/icons-material/Edit";
@@ -53,9 +53,9 @@ const CustomDay = (props) => {
 
 const Profile = () => {
 	const navigate = useNavigate();
-	const [nickname, setNickname] = useState("그린유저");
+	const [nickname, setNickname] = useState("");
 	const [editingNickname, setEditingNickname] = useState(false);
-	const [profileImage, setProfileImage] = useState(defaultProfile);
+	const [profileImage, setProfileImage] = useState(null);
 	const [highlightedDays, setHighlightedDays] = useState([2, 4, 5]);
 	const [isLoading, setIsLoading] = useState(false);
 	const controllerRef = useRef(null);
@@ -64,8 +64,8 @@ const Profile = () => {
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [passwordError, setPasswordError] = useState("");
 	const [realName, setRealName] = useState("");
-	const [city, setCity] = useState("서울");
-	const [district, setDistrict] = useState("성북구");
+	const [city, setCity] = useState("");
+	const [district, setDistrict] = useState("");
 	const [isEditingArea, setIsEditingArea] = useState(false);
 	const dispatch = useDispatch();
 
@@ -77,7 +77,24 @@ const Profile = () => {
 		"https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge100.png?alt=media&token=8f125eb9-814f-4300-809c-1ab75049d7ee"
 	);
 	const [openBadgeModal, setOpenBadgeModal] = useState(false);
-	const point = 3000;
+	const [point, setPoint] = useState(0);
+	const fetchUserProfile = useCallback(async () => {
+		try {
+			const res = await axiosInstance.get("/users/profile/my/");
+			setNickname(res.data.nickname);
+			setRealName(res.data.name);
+			setProfileImage(
+				res.data.profile_image ||
+					"https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge100.png?alt=media&token=8f125eb9-814f-4300-809c-1ab75049d7ee"
+			);
+			setSelectedBadge(res.data.badge_image || "");
+			setPoint(res.data.points ?? 0);
+			setCity(res.data.city);
+			setDistrict(res.data.district);
+		} catch (error) {
+			console.error("프로필 정보 불러오기 실패:", error);
+		}
+	}, []);
 	const badgeList = [
 		{
 			point: 0,
@@ -145,23 +162,20 @@ const Profile = () => {
 		}
 	};
 
-	const fetchChallengeDates = (date) => {
-		const controller = new AbortController();
-		setIsLoading(true);
-
-		setTimeout(() => {
-			const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-			const today = new Date();
-			const day1 = today.getDate();
-			const day2 = day1 - 1;
-			const day3 = day1 - 2;
-			const fakeData = [day1, day2, day3].filter((d) => d > 0 && d <= daysInMonth);
-			setHighlightedDays(fakeData);
+	const fetchChallengeDates = async (date) => {
+		const year = date.getFullYear();
+		const month = date.getMonth() + 1;
+		try {
+			setIsLoading(true);
+			const res = await axiosInstance.get(`/users/my-quests/success-days/?year=${year}&month=${month}`);
+			const days = res.data.success_dates.map((d) => new Date(d).getDate());
+			setHighlightedDays(days);
+			setStreak(calculateStreak(days, date));
+		} catch (error) {
+			console.error("챌린지 날짜 불러오기 실패:", error);
+		} finally {
 			setIsLoading(false);
-			setStreak(calculateStreak(fakeData, date));
-		}, 500);
-
-		controllerRef.current = controller;
+		}
 	};
 
 	const calculateStreak = (dayList, date) => {
@@ -186,11 +200,10 @@ const Profile = () => {
 
 	useEffect(() => {
 		fetchChallengeDates(initialDate);
-		return () => controllerRef.current?.abort();
-	}, []);
+		fetchUserProfile();
+	}, [fetchUserProfile]);
 
 	const handleMonthChange = (date) => {
-		controllerRef.current?.abort();
 		setHighlightedDays([]);
 		fetchChallengeDates(date);
 	};
@@ -248,7 +261,7 @@ const Profile = () => {
 					내 포인트
 				</Typography>
 				<Typography variant='h6' color='success.main'>
-					1,500점
+					{point.toLocaleString()}점
 				</Typography>
 			</Box>
 
@@ -306,7 +319,7 @@ const Profile = () => {
 							<Box display='flex' justifyContent='space-between' alignItems='center' width='100%'>
 								<Typography variant='body1'>이름</Typography>
 								<Typography variant='body2' color='text.secondary'>
-									홍길동
+									{realName}
 								</Typography>
 							</Box>
 						</ListItem>
@@ -407,9 +420,12 @@ const Profile = () => {
 						비밀번호 설정
 					</ListItemButton>
 					<Divider />
+					{/*
 					<ListItemButton sx={{padding: "10px 0"}} onClick={() => setOpenEmailModal(true)}>
 						이메일 설정
 					</ListItemButton>
+					<Divider />
+					*/}
 					<ListItemButton sx={{padding: "10px 0"}} onClick={handleLogout}>
 						로그아웃
 					</ListItemButton>

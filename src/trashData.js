@@ -632,7 +632,7 @@ const trashData = [
 			},
 			{
 				id: 86,
-				name: "도기 화분",
+				name: "도자기 화분",
 				howToDispose: `- 흙 제거 후 깨진 경우 감싸서 일반 쓰레기로 배출합니다.`,
 				recyclable: false,
 				categories: ["불연성 쓰레기"],

@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from "react";
-import {Box, TextField, Typography, IconButton, Paper, MenuItem, Alert} from "@mui/material";
+import {Box, TextField, Typography, IconButton, Paper, MenuItem, Alert, CircularProgress} from "@mui/material";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -7,13 +7,14 @@ import {useNavigate, useLocation} from "react-router-dom";
 import {LocalizationProvider} from "@mui/x-date-pickers";
 import {AdapterDateFns} from "@mui/x-date-pickers/AdapterDateFns";
 import {ko} from "date-fns/locale";
-import {DatePicker} from "@mui/x-date-pickers/DatePicker";
 import {MobileDatePicker} from "@mui/x-date-pickers/MobileDatePicker";
 import styles from "./PostCreate.module.css";
 import {DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors} from "@dnd-kit/core";
 import {SortableContext, arrayMove, horizontalListSortingStrategy, useSortable} from "@dnd-kit/sortable";
 import {CSS} from "@dnd-kit/utilities";
 import {area} from "../../area";
+
+import axiosInstance from "../../axiosInstance";
 
 const SortableImage = ({img, index, onDelete}) => {
 	const {attributes, listeners, setNodeRef, transform, transition} = useSortable({id: img.id});
@@ -53,6 +54,7 @@ const PostCreate = () => {
 	const [district, setDistrict] = useState("");
 	const [error, setError] = useState("");
 	const [recruitment, setRecruitment] = useState("");
+	const [loading, setLoading] = useState(false);
 
 	useEffect(() => {
 		if (isEditMode) {
@@ -76,6 +78,11 @@ const PostCreate = () => {
 
 	const handleImageChange = (e) => {
 		const files = Array.from(e.target.files);
+		const totalImages = images.length + files.length;
+		if (totalImages > 5) {
+			alert("이미지는 5장까지만 등록할 수 있습니다.");
+			return;
+		}
 		const newImages = files.map((file) => ({id: crypto.randomUUID(), url: URL.createObjectURL(file)}));
 		setImages((prev) => [...prev, ...newImages]);
 	};
@@ -84,18 +91,51 @@ const PostCreate = () => {
 		setImages((prev) => prev.filter((img) => img.id !== id));
 	};
 
-	const handleSubmit = () => {
+	const handleSubmit = async () => {
+		setLoading(true);
 		if (!title.trim() || !content.trim()) {
 			alert("제목과 내용을 입력해주세요.");
+			setLoading(false);
 			return;
 		}
+
 		if (isCampaign && startDate && endDate && endDate < startDate) {
 			setError("종료 날짜는 시작 날짜보다 늦어야 합니다.");
+			setLoading(false);
 			return;
 		}
-		setError("");
-		alert(isEditMode ? "게시물이 수정되었습니다." : "게시물이 등록되었습니다.");
-		navigate(-1);
+
+		const postData = {
+			title,
+			content,
+			post_type: isCampaign ? "campaign" : state?.noticeBoard === "정보 게시판" ? "info" : "free",
+		};
+
+		if (isCampaign) {
+			postData.campaign_data = {
+				city,
+				district,
+				start_date: startDate?.toLocaleDateString("sv-SE"),
+				end_date: endDate?.toLocaleDateString("sv-SE"),
+				participant_limit: Number(recruitment),
+			};
+		}
+
+		try {
+			if (isEditMode) {
+				await axiosInstance.patch(`users/community/posts/${state.post.id}/`, postData);
+				alert("게시글이 수정되었습니다.");
+			} else {
+				await axiosInstance.post("users/community/posts/", postData);
+				alert("게시글이 등록되었습니다.");
+			}
+			setLoading(false);
+			navigate(-1);
+		} catch (err) {
+			console.error(err);
+			alert(isEditMode ? "게시글 수정에 실패했습니다." : "게시글 등록에 실패했습니다.");
+			setLoading(false);
+		}
 	};
 
 	const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor));
@@ -106,10 +146,23 @@ const PostCreate = () => {
 				<IconButton onClick={() => navigate(-1)} sx={{padding: "0px"}}>
 					<ArrowBackIosNewIcon />
 				</IconButton>
-				<Typography className={styles.titleText}>{isEditMode ? "글 수정" : "글쓰기"}</Typography>
-				<Typography className={styles.successText} onClick={handleSubmit} sx={{marginLeft: "auto", cursor: "pointer"}}>
-					{isEditMode ? "수정" : "완료"}
+				<Typography className={styles.titleText}>
+					{isEditMode
+						? "글 수정"
+						: isCampaign
+						? "캠페인 글쓰기"
+						: state?.noticeBoard === "정보 게시판"
+						? "정보 게시판 글쓰기"
+						: "자유 게시판 글쓰기"}
 				</Typography>
+				{loading ? null : (
+					<Typography
+						className={styles.successText}
+						onClick={handleSubmit}
+						sx={{marginLeft: "auto", cursor: "pointer"}}>
+						{isEditMode ? "수정" : "완료"}
+					</Typography>
+				)}
 			</Box>
 
 			{isCampaign && (
@@ -119,6 +172,7 @@ const PostCreate = () => {
 							value={startDate}
 							onChange={(newValue) => setStartDate(newValue)}
 							format='yyyy-MM-dd'
+							minDate={new Date()}
 							closeOnSelect={true}
 							slotProps={{
 								toolbar: {hidden: true},
@@ -313,6 +367,11 @@ const PostCreate = () => {
 						</div>
 					</SortableContext>
 				</DndContext>
+			)}
+			{loading && (
+				<Box position='fixed' top='33%' left='50%' sx={{transform: "translate(-50%, -50%)", zIndex: 1500}}>
+					<CircularProgress color='success' />
+				</Box>
 			)}
 		</Box>
 	);

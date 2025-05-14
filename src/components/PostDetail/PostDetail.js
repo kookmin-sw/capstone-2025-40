@@ -1,6 +1,9 @@
 import React, {useState, useRef, useEffect, useMemo} from "react";
-import {useLocation, useNavigate} from "react-router-dom";
-import {Box, Typography, IconButton, TextField, Button, Menu, MenuItem} from "@mui/material";
+import {useNavigate} from "react-router-dom";
+import {useParams, useLocation} from "react-router-dom";
+import axiosInstance from "../../axiosInstance";
+import {Box, Typography, IconButton, TextField, Button, Menu, MenuItem, Paper} from "@mui/material";
+import CircularProgress from "@mui/material/CircularProgress";
 import Snackbar from "@mui/material/Snackbar";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ThumbUpAltOutlinedIcon from "@mui/icons-material/ThumbUpAltOutlined";
@@ -49,72 +52,214 @@ const formatDateOnly = (date) => {
 };
 
 const PostDetail = () => {
+	const [editCommentId, setEditCommentId] = useState(null);
+	const [reportType, setReportType] = useState("post");
+	const [commentMenuAnchorEl, setCommentMenuAnchorEl] = useState(null);
+	const [selectedCommentId, setSelectedCommentId] = useState(null);
+	const [isEditingComment, setIsEditingComment] = useState(false);
+	const [isEditingReply, setIsEditingReply] = useState(false);
+
+	const handleCommentMenuOpen = (event, commentId, isReply = false) => {
+		setCommentMenuAnchorEl(event.currentTarget);
+		setSelectedCommentId(commentId);
+		setIsEditingReply(isReply);
+	};
+
+	const handleCommentMenuClose = () => {
+		setCommentMenuAnchorEl(null);
+		setSelectedCommentId(null);
+	};
+
+	const handleCommentEdit = () => {
+		let comment = null;
+		if (isEditingReply) {
+			for (const c of comments) {
+				const found = c.replies?.find((r) => r.id === selectedCommentId);
+				if (found) {
+					comment = found;
+					setReplyTargetId(c.id);
+					break;
+				}
+			}
+		} else {
+			comment = comments.find((c) => c.id === selectedCommentId);
+		}
+
+		if (comment) {
+			setInputValue(comment.text);
+			setIsEditingComment(true);
+			setEditCommentId(comment.id);
+			textAreaDomRef.current?.focus();
+		}
+		handleCommentMenuClose();
+	};
+
+	const handleCommentDelete = async () => {
+		const confirmed = window.confirm("이 댓글을 삭제하시겠습니까?");
+		if (!confirmed) return;
+		try {
+			const url = `/users/community/posts/${id}/comments/${selectedCommentId}/`;
+			await axiosInstance.delete(url);
+			setComments((prev) => prev.filter((c) => c.id !== selectedCommentId));
+			await fetchComments();
+		} catch (error) {
+			console.error("댓글 삭제 실패:", error);
+			alert("댓글 삭제에 실패했습니다. 다시 시도해주세요.");
+		}
+		handleCommentMenuClose();
+	};
 	const navigate = useNavigate();
+	const {id} = useParams();
 	const {state} = useLocation();
-	const post = state?.post;
+	const [post, setPost] = useState(null);
+	const [currentParticipants, setCurrentParticipants] = useState(null);
 
-	const badgeMap = {
-		100: "https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge100.png?alt=media&token=8f125eb9-814f-4300-809c-1ab75049d7ee",
-		300: "https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge300.png?alt=media&token=6ee0120a-00b2-460a-9953-735bed462802",
-		500: "https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/badges%2Fbadge500.png?alt=media&token=d176caa3-6c0f-4211-9412-9e32fe5e9e20",
+	const [nextUrl, setNextUrl] = useState(null);
+	const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+	const [loading, setLoading] = useState(true);
+	// 게시글 데이터 불러오기
+	const fetchPostData = async () => {
+		setLoading(true);
+		try {
+			const response = await axiosInstance.get(`users/community/posts/${id}/`);
+			const data = response.data;
+
+			const mappedPost = {
+				id: data.id,
+				writer: data.post_type === "campaign" ? data.user.name : data.user.nickname,
+				title: data.title,
+				content: data.content,
+				createdAt: data.created_at,
+				likes: data.like_count,
+				scrap: data.scrap_count,
+				noticeBoard:
+					data.post_type === "campaign"
+						? "캠페인 게시판"
+						: data.post_type === "free"
+						? "자유 게시판"
+						: data.post_type === "info"
+						? "정보게시판"
+						: "기타",
+				startDate: data.campaign?.start_date,
+				endDate: data.campaign?.end_date,
+				location: data.campaign ? `${data.campaign.city} ${data.campaign.district}` : null,
+				maxParticipants: data.campaign?.participant_limit,
+				profileImage:
+					data.user.profile_image ||
+					"https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/profile-images%2FGreenDayProfile.png?alt=media&token=dc457190-a5f4-4ea9-be09-39a31aafef7c",
+				badgeImage: data.user.badge_image,
+				images:
+					data.images
+						?.map((img) => {
+							try {
+								const parsed = JSON.parse(img.image_url.replace(/'/g, '"'));
+								return parsed.image_url;
+							} catch {
+								return null;
+							}
+						})
+						.filter(Boolean) || [],
+				isOwner: data.is_owner,
+				liked: data.has_liked,
+				scrapped: data.has_scrapped,
+				commentCount: data.comment_count,
+				scrap: data.scrap_count,
+				currentParticipants: data.campaign?.current_participant_count,
+				participated: data.has_participated,
+			};
+
+			setPost(mappedPost);
+			setLiked(data.has_liked);
+			setScrapped(data.has_scrapped);
+			setLikes(data.like_count);
+			setScrap(data.scrap_count);
+			// setCurrentParticipants(data.current_participant_count ?? 0);
+			setIsParticipated(data.has_participated);
+		} catch (error) {
+			console.error("Failed to fetch post data:", error);
+		} finally {
+			setLoading(false);
+		}
 	};
 
-	const getRandomBadge = () => {
-		const badgeKeys = [100, 300, 500];
-		const randomKey = badgeKeys[Math.floor(Math.random() * badgeKeys.length)];
-		return badgeMap[randomKey];
+	// 댓글 불러오기
+	const fetchComments = async (url = `/users/community/posts/${id}/comments/`, append = false) => {
+		try {
+			const res = await axiosInstance.get(url);
+			const commentData = res.data.results.map((comment) => ({
+				id: comment.id,
+				nickname: post?.noticeBoard === "캠페인 게시판" ? comment.user.name : comment.user.nickname,
+				profileImage: comment.user.profile_image || "기본 이미지 URL",
+				badgeImage: comment.user.badge_image,
+				text: comment.content,
+				timestamp: new Date(comment.created_at),
+				likes: comment.like_count,
+				isMyComment: comment.is_my_comment,
+				hasLiked: comment.has_liked_comment,
+				replies: (comment.replies || []).map((reply) => ({
+					id: reply.id,
+					nickname: post?.noticeBoard === "캠페인 게시판" ? reply.user.name : reply.user.nickname,
+					profileImage: reply.user.profile_image || "기본 이미지 URL",
+					badgeImage: reply.user.badge_image,
+					text: reply.content,
+					timestamp: new Date(reply.created_at),
+					likes: reply.like_count,
+					isMyReply: reply.is_my_reply,
+					hasLiked: reply.has_liked_comment,
+				})),
+			}));
+			setComments((prev) => (append ? [...prev, ...commentData] : commentData));
+			setNextUrl(res.data.next);
+		} catch (error) {
+			console.error("댓글 불러오기 실패:", error);
+		}
 	};
 
-	const writerBadge = useMemo(getRandomBadge, []);
+	useEffect(() => {
+		if (!nextUrl || isLoadingMore) return;
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries[0].isIntersecting) {
+					setIsLoadingMore(true);
+					setTimeout(() => {
+						fetchComments(nextUrl, true).finally(() => setIsLoadingMore(false));
+					}, 500);
+				}
+			},
+			{
+				threshold: 1.0,
+			}
+		);
+
+		const target = bottomRef.current;
+		if (target) observer.observe(target);
+
+		return () => {
+			if (target) observer.unobserve(target);
+		};
+	}, [nextUrl, isLoadingMore]);
+
+	useEffect(() => {
+		fetchPostData();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [id]);
+
+	useEffect(() => {
+		if (post) {
+			fetchComments();
+		}
+	}, [post]);
+
 	// 댓글/대댓글별 뱃지 매핑 state
-	const [commentBadgeMap, setCommentBadgeMap] = useState({});
 	const isInitialMount = useRef(true);
 	const [hasNewComment, setHasNewComment] = useState(false);
 	const scrollableContentRef = useRef(null);
 	const [refreshKey, setRefreshKey] = useState(0); // 새로고침 트리거
+	const hasJustAddedCommentRef = useRef(false);
 
-	const [comments, setComments] = useState([
-		{
-			id: 1,
-			nickname: "채주원",
-			likes: 3,
-			text: "제가 참여하겠습니다!",
-			timestamp: new Date(),
-			replies: [
-				{
-					id: 11,
-					nickname: "홍길동 (글쓴이)",
-					likes: 3,
-					text: "감사합니다!",
-					timestamp: new Date(),
-				},
-			],
-		},
-		{
-			id: 2,
-			nickname: "성창민",
-			likes: 2,
-			text: "저도 참여할래요!!",
-			timestamp: new Date(),
-			replies: [],
-		},
-		{
-			id: 3,
-			nickname: "정하람",
-			likes: 0,
-			text: "저도 참여할래요!!",
-			timestamp: new Date(),
-			replies: [],
-		},
-		{
-			id: 4,
-			nickname: "박상엄",
-			likes: 0,
-			text: "저도 참여할래요!!",
-			timestamp: new Date(),
-			replies: [],
-		},
-	]);
+	const [comments, setComments] = useState([]);
 
 	const [inputValue, setInputValue] = useState("");
 	const [replyTargetId, setReplyTargetId] = useState(null);
@@ -132,10 +277,38 @@ const PostDetail = () => {
 	const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 	const isReplyingRef = useRef(false);
 	const [isParticipated, setIsParticipated] = useState(false);
-	const [currentParticipants, setCurrentParticipants] = useState(post?.currentParticipants ?? 6);
-	const maxParticipants = post?.maxParticipants ?? 11;
+	// 신고 메뉴 및 다이얼로그 상태
+	const [reportAnchorEl, setReportAnchorEl] = useState(null);
+	const [reportCategory, setReportCategory] = useState("");
+	const [reportReason, setReportReason] = useState("");
+	const [reportDialogOpen, setReportDialogOpen] = useState(false);
+	const maxParticipants = post?.maxParticipants ?? 0;
+
+	// 참여자 목록 메뉴 state
+	const [participantAnchorEl, setParticipantAnchorEl] = useState(null);
+	const [participants, setParticipants] = useState([]);
+	// 참여자 목록 불러오기 핸들러
+	const handleParticipantClick = async (event) => {
+		setParticipantAnchorEl(event.currentTarget);
+		try {
+			const response = await axiosInstance.get(`/users/community/posts/${id}/participant/`);
+			const currentUsername = JSON.parse(localStorage.getItem("user"))?.username;
+
+			const formatted = response.data.map((p) => ({
+				...p,
+				user: {
+					...p.user,
+					displayName: p.user.username === currentUsername ? `${p.user.name} (나)` : p.user.name,
+				},
+			}));
+
+			setParticipants(formatted);
+		} catch (error) {
+			console.error("참여자 목록 불러오기 실패:", error);
+		}
+	};
 	const [snackbarOpen, setSnackbarOpen] = useState(false);
-	const isMyPost = state?.fromMyPosts === true;
+	const isMyPost = post?.isOwner === true;
 
 	// 이미지 미리보기 모달 상태
 	const [previewOpen, setPreviewOpen] = useState(false);
@@ -175,8 +348,9 @@ const PostDetail = () => {
 		}
 
 		if (hasNewComment && !isReplyingRef.current) {
-			const lastCommentId = comments[comments.length - 1]?.id;
-			commentRefs.current[lastCommentId]?.scrollIntoView({behavior: "smooth", block: "center"});
+			const firstCommentId = comments[0]?.id;
+			const el = commentRefs.current[firstCommentId];
+			el?.scrollIntoView({behavior: "smooth", block: "start"});
 		}
 
 		setHasNewComment(false);
@@ -199,74 +373,113 @@ const PostDetail = () => {
 		};
 	}, [textAreaDomRef.current]);
 
-	// 댓글/대댓글별 뱃지 매핑 초기화
-	useEffect(() => {
-		const allCommentIds = comments.flatMap((comment) => [comment.id, ...(comment.replies?.map((r) => r.id) ?? [])]);
-		const initialBadgeMap = {};
-		allCommentIds.forEach((id) => {
-			initialBadgeMap[id] = getRandomBadge();
-		});
-		setCommentBadgeMap(initialBadgeMap);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
-
-	if (!post) return <Typography>게시글 정보를 찾을 수 없습니다.</Typography>;
+	if (!post && loading) {
+		return (
+			<Box className={styles.container}>
+				<Box className={styles.header}>
+					<IconButton onClick={() => navigate(-1)} sx={{padding: "0px"}}>
+						<ArrowBackIosNewIcon />
+					</IconButton>
+					<Typography className={styles.boardTitle}></Typography>
+				</Box>
+				<Box textAlign='center' py={5}>
+					<CircularProgress color='success' />
+				</Box>
+			</Box>
+		);
+	}
 
 	const handleRefresh = () => {
 		return new Promise((resolve) => {
-			setTimeout(() => {
-				setRefreshKey((prev) => prev + 1); // 다시 렌더링
-				resolve();
-			}, 1000);
+			fetchPostData().then(() => {
+				setTimeout(resolve, 500);
+			});
+			fetchComments().then(() => {
+				setTimeout(resolve, 500);
+			});
 		});
 	};
 
-	const handleSubmit = () => {
+	const handleSubmit = async () => {
 		if (!inputValue.trim()) return;
 
 		textAreaDomRef.current?.blur();
 
-		const newEntry = {
-			id: Date.now(),
-			nickname: "홍길동",
-			text: inputValue,
-			timestamp: new Date(),
-			likes: 0,
-		};
+		if (isEditingComment) {
+			const confirmed = window.confirm("이 댓글을 수정하시겠습니까?");
+			if (!confirmed) return;
+			try {
+				const url = `/users/community/posts/${id}/comments/${editCommentId}/`;
 
-		if (replyTargetId) {
-			setComments((prev) => prev.map((c) => (c.id === replyTargetId ? {...c, replies: [...c.replies, newEntry]} : c)));
-			setReplyTargetId(null);
-		} else {
-			setComments((prev) => [...prev, {...newEntry, replies: []}]);
+				await axiosInstance.patch(url, {
+					content: inputValue,
+				});
+				setComments((prev) => prev.map((c) => (c.id === editCommentId ? {...c, text: inputValue} : c)));
+			} catch (error) {
+				console.error("댓글 수정 실패:", error);
+				alert("댓글 수정에 실패했습니다. 다시 시도해주세요.");
+			}
+			setInputValue("");
+			setIsEditingComment(false);
+			setEditCommentId(null);
+			setSelectedCommentId(null);
+			setIsEditingReply(false);
+			await fetchComments();
+			return;
 		}
 
-		setHasNewComment(true);
-		setInputValue("");
+		try {
+			let response;
+			if (replyTargetId) {
+				response = await axiosInstance.post(`/users/community/posts/${id}/comments/${replyTargetId}/replies/`, {
+					content: inputValue,
+				});
+				await fetchComments();
+			} else {
+				response = await axiosInstance.post(`/users/community/posts/${id}/comments/`, {
+					content: inputValue,
+				});
+				hasJustAddedCommentRef.current = true;
+				setHasNewComment(true);
+				await fetchComments();
+			}
+			setReplyTargetId(null);
+		} catch (error) {
+			console.error("댓글 등록 실패:", error);
+			alert("댓글 등록에 실패했습니다. 다시 시도해주세요.");
+		}
 
-		// 🔥 마지막에 리셋
+		setInputValue("");
+		setIsEditingComment(false);
 		setTimeout(() => {
 			isReplyingRef.current = false;
+			setReplyTargetId(null);
 		}, 0);
 	};
 
-	const handleLike = () => {
-		if (liked) return;
-
-		const confirmed = window.confirm("이 글에 공감하시겠습니까?");
-		if (confirmed) {
-			setLikes((prev) => prev + 1);
-			setLiked(true);
+	// 게시글 좋아요 핸들러
+	const handleLike = async () => {
+		try {
+			await axiosInstance.post(`/users/community/posts/${id}/like/`);
+			setLiked((prev) => !prev);
+			setLikes((prev) => (liked ? prev - 1 : prev + 1));
+			await fetchPostData();
+		} catch (error) {
+			console.error("게시글 좋아요 실패:", error);
+			alert("게시글 좋아요 처리 중 문제가 발생했습니다.");
 		}
 	};
 
-	const handleScrap = () => {
-		if (scrapped) return;
-
-		const confirmed = window.confirm("이 글을 저장하시겠습니까?");
-		if (confirmed) {
-			setScrapped(true);
-			setScrap((prev) => prev + 1);
+	// 게시글 스크랩 핸들러
+	const handleScrap = async () => {
+		try {
+			await axiosInstance.post(`/users/community/posts/${id}/scrap/`);
+			setScrapped((prev) => !prev);
+			setScrap((prev) => (scrapped ? prev - 1 : prev + 1));
+			await fetchPostData();
+		} catch (error) {
+			console.error("스크랩 실패:", error);
+			alert("스크랩 처리 중 문제가 발생했습니다.");
 		}
 	};
 
@@ -280,13 +493,35 @@ const PostDetail = () => {
 		setMenuAnchorEl(null);
 	};
 
-	// 신고하기 클릭 시
-	const handleReport = () => {
-		handleMenuClose();
-		const confirmed = window.confirm("이 게시글을 신고하시겠습니까?");
-		if (confirmed) {
-			alert("신고가 접수되었습니다.");
+	// 신고 관련 핸들러
+	const handleReportClick = (event) => {
+		setReportAnchorEl(event.currentTarget);
+	};
+
+	const handleReportCategorySelect = (category) => {
+		setReportCategory(category);
+		setReportDialogOpen(true);
+		setReportAnchorEl(null);
+	};
+
+	const handleReportDialogClose = () => {
+		setReportDialogOpen(false);
+		setReportReason("");
+		setReportCategory("");
+	};
+
+	// Generalized 신고 핸들러
+	const handleReport = (event, type = "post", commentId = null, parentCommentId = null) => {
+		setReportType(type);
+		if (type === "comment" || type === "reply") {
+			setSelectedCommentId(commentId);
 		}
+		if (type === "reply") {
+			setReplyTargetId(parentCommentId);
+			setIsEditingReply(true);
+		}
+		handleMenuClose();
+		handleReportClick(event);
 	};
 
 	// URL 복사 클릭 시
@@ -300,61 +535,50 @@ const PostDetail = () => {
 		setMenuAnchorEl(null); // 메뉴 닫기
 	};
 
-	const handleCommentLike = (id) => {
-		if (commentLikes[id]) return; // 이미 공감함
-
-		const confirmed = window.confirm("이 댓글을 공감하시겠습니까?");
-		if (!confirmed) return;
-
-		setComments((prev) => prev.map((c) => (c.id === id ? {...c, likes: (c.likes ?? 0) + 1} : c)));
-		setCommentLikes((prev) => ({...prev, [id]: true}));
-	};
-
-	// 댓글 공감 및 신고 핸들러
-	const handleCommentReport = (id) => {
-		const confirmed = window.confirm("이 댓글을 신고하시겠습니까?");
-		if (confirmed) {
-			alert("신고가 접수되었습니다.");
+	// 댓글 공감 핸들러
+	const handleCommentLike = async (id) => {
+		try {
+			const res = await axiosInstance.post(`/users/community/posts/${post.id}/comments/${id}/like/`);
+			const {liked, like_count} = res.data;
+			setComments((prev) => prev.map((c) => (c.id === id ? {...c, hasLiked: liked, likes: like_count} : c)));
+		} catch (error) {
+			console.error("댓글 좋아요 실패:", error);
+			alert("댓글 좋아요 처리 중 문제가 발생했습니다.");
 		}
 	};
 
 	// 대댓글 공감 핸들러
-	const handleReplyLike = (commentId, replyId) => {
-		if (commentLikes[replyId]) return;
-		const confirmed = window.confirm("이 대댓글을 공감하시겠습니까?");
-		if (!confirmed) return;
-
-		setComments((prev) =>
-			prev.map((c) =>
-				c.id === commentId
-					? {
-							...c,
-							replies: c.replies.map((r) => (r.id === replyId ? {...r, likes: (r.likes || 0) + 1} : r)),
-					  }
-					: c
-			)
-		);
-		setCommentLikes((prev) => ({...prev, [replyId]: true}));
-	};
-
-	// 대댓글 신고 핸들러
-	const handleReplyReport = (replyId) => {
-		const confirmed = window.confirm("이 대댓글을 신고하시겠습니까?");
-		if (confirmed) alert("신고가 접수되었습니다.");
-	};
-
-	const handleParticipate = () => {
-		if (isParticipated) return;
-
-		if (currentParticipants >= maxParticipants) {
-			alert("모집이 완료된 캠페인입니다.");
-			return;
+	const handleReplyLike = async (commentId, replyId) => {
+		try {
+			const res = await axiosInstance.post(`/users/community/posts/${post.id}/comments/${replyId}/like/`);
+			const {liked, like_count} = res.data;
+			setComments((prev) =>
+				prev.map((c) =>
+					c.id === commentId
+						? {
+								...c,
+								replies: c.replies.map((r) => (r.id === replyId ? {...r, hasLiked: liked, likes: like_count} : r)),
+						  }
+						: c
+				)
+			);
+		} catch (error) {
+			console.error("대댓글 좋아요 실패:", error);
+			alert("대댓글 좋아요 처리 중 문제가 발생했습니다.");
 		}
+	};
 
-		const confirmed = window.confirm("이 캠페인에 참여하시겠습니까?");
-		if (confirmed) {
-			setIsParticipated(true);
-			setCurrentParticipants((prev) => prev + 1);
+	// 캠페인 참여 핸들러
+	const handleParticipate = async () => {
+		try {
+			const response = await axiosInstance.post(`/users/community/posts/${id}/participant/`);
+			const {participated, current_participant_count} = response.data;
+			setIsParticipated(participated);
+			setCurrentParticipants(current_participant_count);
+			await fetchPostData();
+		} catch (error) {
+			console.error("캠페인 참여 실패:", error);
+			alert("캠페인 참여 처리 중 문제가 발생했습니다.");
 		}
 	};
 
@@ -374,8 +598,33 @@ const PostDetail = () => {
 		});
 	};
 
+	// 게시글 삭제 핸들러
+	const handleDeletePost = async () => {
+		handleMenuClose();
+		const confirmed = window.confirm("게시글을 삭제하시겠습니까?");
+		if (!confirmed) return;
+
+		try {
+			await axiosInstance.delete(`/users/community/posts/${id}/`);
+			alert("게시글이 삭제되었습니다.");
+			navigate(-1);
+		} catch (error) {
+			console.error("게시글 삭제 실패:", error);
+			alert("삭제에 실패했습니다. 다시 시도해주세요.");
+		}
+	};
+
 	return (
 		<Box className={styles.container}>
+			<Menu
+				anchorEl={commentMenuAnchorEl}
+				open={Boolean(commentMenuAnchorEl)}
+				onClose={handleCommentMenuClose}
+				anchorOrigin={{vertical: "top", horizontal: "right"}}
+				transformOrigin={{vertical: "top", horizontal: "right"}}>
+				<MenuItem onClick={handleCommentEdit}>수정</MenuItem>
+				<MenuItem onClick={handleCommentDelete}>삭제</MenuItem>
+			</Menu>
 			<Menu
 				anchorEl={menuAnchorEl}
 				open={isMenuOpen}
@@ -388,11 +637,86 @@ const PostDetail = () => {
 					vertical: "top",
 					horizontal: "right",
 				}}>
-				<MenuItem onClick={handleReport}>신고하기</MenuItem>
+				<MenuItem onClick={(e) => handleReport(e, "post")}>신고하기</MenuItem>
 				<MenuItem onClick={handleCopyUrl}>URL 복사</MenuItem>
 				{isMyPost && <MenuItem onClick={handleEditPost}>수정</MenuItem>}
+				{isMyPost && <MenuItem onClick={handleDeletePost}>삭제</MenuItem>}
 			</Menu>
+			{/* 신고 카테고리 선택 메뉴 */}
+			<Menu
+				anchorEl={reportAnchorEl}
+				open={Boolean(reportAnchorEl)}
+				onClose={() => setReportAnchorEl(null)}
+				anchorOrigin={{vertical: "top", horizontal: "right"}}
+				transformOrigin={{vertical: "top", horizontal: "right"}}>
+				{["스팸", "욕설/비방", "기타"].map((option) => (
+					<MenuItem key={option} onClick={() => handleReportCategorySelect(option)}>
+						{option}
+					</MenuItem>
+				))}
+			</Menu>
+			{/* 신고 사유 입력 다이얼로그 */}
+			<Dialog open={reportDialogOpen} onClose={handleReportDialogClose} maxWidth='sm' fullWidth>
+				<DialogTitle>{reportCategory}</DialogTitle>
+				<DialogContent>
+					<TextField
+						autoFocus
+						color='success'
+						margin='dense'
+						fullWidth
+						multiline
+						rows={4}
+						placeholder='신고 사유를 입력해주세요.'
+						value={reportReason}
+						onChange={(e) => setReportReason(e.target.value)}
+						variant='outlined'
+					/>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={handleReportDialogClose} color='success'>
+						취소
+					</Button>
+					<Button
+						onClick={async () => {
+							try {
+								if (!reportReason.trim()) {
+									alert("신고 사유를 입력해주세요.");
+									return;
+								}
+								let url = "";
+								if (reportType === "post") {
+									url = `/users/community/posts/${id}/report/`;
+								} else {
+									url = `/users/community/posts/${id}/comments/${selectedCommentId}/report/`;
+								}
 
+								await axiosInstance.post(url, {
+									reason: reportCategory === "스팸" ? "spam" : reportCategory === "욕설/비방" ? "abuse" : "other",
+									details: reportReason,
+								});
+								alert("신고가 접수되었습니다.");
+
+								setIsEditingComment(false);
+								setEditCommentId(null);
+								setSelectedCommentId(null);
+								setIsEditingReply(false);
+								setReplyTargetId(null);
+								setReportType("post");
+							} catch (error) {
+								if (error.response?.data?.detail === "이미 신고하셨습니다.") {
+									alert(error.response.data.detail);
+								} else {
+									console.error("댓글 신고 실패:", error);
+									alert("신고 처리 중 문제가 발생했습니다.");
+								}
+							}
+							handleReportDialogClose();
+						}}
+						color='success'>
+						확인
+					</Button>
+				</DialogActions>
+			</Dialog>
 			<Box className={styles.header}>
 				<IconButton onClick={() => navigate(-1)} sx={{padding: "0px"}}>
 					<ArrowBackIosNewIcon />
@@ -405,7 +729,7 @@ const PostDetail = () => {
 					<Box className={styles.content}>
 						<Box display='flex' alignItems='center' gap={1} mb={1}>
 							<img
-								src='/default-profile.png'
+								src={post.profileImage}
 								alt='작성자 프로필'
 								style={{
 									width: 48,
@@ -414,17 +738,19 @@ const PostDetail = () => {
 									objectFit: "cover",
 									cursor: "pointer",
 								}}
-								onClick={() => handlePreview("/default-profile.png")}
+								onClick={() => handlePreview(post.profileImage)}
 							/>
 							<Box>
 								<Box display='flex' alignItems='center' gap={1}>
 									<Typography className={styles.nickname}>{post.writer}</Typography>
-									<img
-										src={writerBadge}
-										alt='뱃지'
-										style={{width: 36, height: 36, cursor: "pointer"}}
-										onClick={() => handlePreview(writerBadge)}
-									/>
+									{post.badgeImage && (
+										<img
+											src={post.badgeImage}
+											alt='뱃지'
+											style={{width: 36, height: 36, cursor: "pointer"}}
+											onClick={() => handlePreview(post.badgeImage)}
+										/>
+									)}
 								</Box>
 								<Typography className={styles.time}>{formatTime(post.createdAt)}</Typography>
 							</Box>
@@ -448,20 +774,29 @@ const PostDetail = () => {
 						<Typography className={styles.title}>{post.title}</Typography>
 						<Typography className={styles.text}>{post.content}</Typography>
 
-						{post.image && (
-							<Box className={styles.imageWrapper}>
-								<img
-									src={post.image}
-									alt='본문 이미지'
-									style={{
-										width: "100%",
-										height: "auto",
-										marginTop: "12px",
-										borderRadius: "12px",
-										cursor: "pointer",
-									}}
-									onClick={() => handlePreview(post.image)}
-								/>
+						{post.images?.length > 0 && (
+							<Box
+								sx={{
+									display: "flex",
+									overflowX: "auto",
+									gap: 1,
+									paddingY: 1,
+								}}>
+								{post.images.map((img, idx) => (
+									<Box
+										key={idx}
+										component='img'
+										src={img}
+										alt={`본문 이미지 ${idx + 1}`}
+										onClick={() => handlePreview(img)}
+										sx={{
+											height: 180,
+											borderRadius: 2,
+											cursor: "pointer",
+											flexShrink: 0,
+										}}
+									/>
+								))}
 							</Box>
 						)}
 
@@ -473,12 +808,17 @@ const PostDetail = () => {
 										borderRadius: "12px",
 										padding: "12px",
 										boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
-										color: isParticipated ? "#4caf50" : "#999",
+										color: post.participated ? "#4caf50" : "#999",
 									}}>
 									<WavingHandIcon fontSize='medium' />
 								</IconButton>
-								<Typography variant='body2' color='#999' mt={1}>
-									{currentParticipants} / {maxParticipants}
+								<Typography
+									variant='body2'
+									color='#999'
+									mt={1}
+									onClick={handleParticipantClick}
+									sx={{cursor: "pointer"}}>
+									{post.currentParticipants} / {maxParticipants}
 								</Typography>
 							</Box>
 						)}
@@ -506,7 +846,7 @@ const PostDetail = () => {
 							sx={{cursor: "pointer"}}>
 							<ChatIcon />
 							<Typography className={styles.iconText}>
-								{(comments.length ?? 0) > 0 ? ` ${comments.length}` : ""}
+								{(post?.commentCount ?? 0) > 0 ? ` ${post.commentCount}` : ""}
 							</Typography>
 						</Box>
 
@@ -527,8 +867,8 @@ const PostDetail = () => {
 									<Box
 										className={styles.commentActionButton}
 										onClick={() => handleCommentLike(comment.id)}
-										style={{color: commentLikes[comment.id] ? "#f28b82" : "#999"}}>
-										{commentLikes[comment.id] ? (
+										style={{color: comment.hasLiked ? "#f28b82" : "#999"}}>
+										{comment.hasLiked ? (
 											<ThumbUpAltIcon fontSize='small' />
 										) : (
 											<ThumbUpAltOutlinedIcon fontSize='small' />
@@ -537,11 +877,16 @@ const PostDetail = () => {
 									</Box>
 									<Box
 										className={styles.commentActionButton}
-										onClick={() => handleCommentReport(comment.id)}
+										onClick={(e) => handleReport(e, "comment", comment.id)}
 										style={{color: "#999"}}>
 										<FlagOutlinedIcon fontSize='small' />
 										<Typography variant='caption'></Typography>
 									</Box>
+									{comment.isMyComment && (
+										<IconButton onClick={(e) => handleCommentMenuOpen(e, comment.id)} size='small'>
+											<MoreVertIcon fontSize='small' />
+										</IconButton>
+									)}
 								</Box>
 
 								{/* 댓글 내용 */}
@@ -561,17 +906,24 @@ const PostDetail = () => {
 									<Box>
 										<Box display='flex' alignItems='center' gap={1}>
 											<Typography className={styles.commentNickname}>{comment.nickname}</Typography>
-											<img
-												src={commentBadgeMap[comment.id]}
-												alt='뱃지'
-												style={{width: 32, height: 32, cursor: "pointer"}}
-												onClick={() => handlePreview(commentBadgeMap[comment.id])}
-											/>
+											{comment.badgeImage && (
+												<img
+													src={comment.badgeImage}
+													alt='뱃지'
+													style={{width: 32, height: 32, cursor: "pointer"}}
+													onClick={() => handlePreview(comment.badgeImage)}
+												/>
+											)}
 										</Box>
 									</Box>
 								</Box>
 
-								<Typography className={styles.commentText}>{comment.text}</Typography>
+								<Typography
+									className={styles.commentText}
+									component='pre'
+									sx={{whiteSpace: "pre-wrap", wordBreak: "break-word"}}>
+									{comment.text}
+								</Typography>
 								<Typography className={styles.commentTime}>{formatTime(comment.timestamp)}</Typography>
 
 								<Button
@@ -590,8 +942,8 @@ const PostDetail = () => {
 													<Box
 														className={styles.commentActionButton}
 														onClick={() => handleReplyLike(comment.id, reply.id)}
-														style={{color: commentLikes[reply.id] ? "#f28b82" : "#999"}}>
-														{commentLikes[reply.id] ? (
+														style={{color: reply.hasLiked ? "#f28b82" : "#999"}}>
+														{reply.hasLiked ? (
 															<ThumbUpAltIcon fontSize='small' />
 														) : (
 															<ThumbUpAltOutlinedIcon fontSize='small' />
@@ -600,11 +952,17 @@ const PostDetail = () => {
 													</Box>
 													<Box
 														className={styles.commentActionButton}
-														onClick={() => handleReplyReport(reply.id)}
+														onClick={(e) => handleReport(e, "reply", reply.id, comment.id)}
 														style={{color: "#999"}}>
 														<FlagOutlinedIcon fontSize='small' />
 														<Typography variant='caption'></Typography>
 													</Box>
+
+													{reply.isMyReply && (
+														<IconButton onClick={(e) => handleCommentMenuOpen(e, reply.id, true)} size='small'>
+															<MoreVertIcon fontSize='small' />
+														</IconButton>
+													)}
 												</Box>
 												<Box display='flex' alignItems='center' gap={1}>
 													<img
@@ -622,16 +980,23 @@ const PostDetail = () => {
 													<Box>
 														<Box display='flex' alignItems='center' gap={1}>
 															<Typography className={styles.replyNickname}>{reply.nickname}</Typography>
-															<img
-																src={commentBadgeMap[reply.id]}
-																alt='뱃지'
-																style={{width: 32, height: 32, cursor: "pointer"}}
-																onClick={() => handlePreview(commentBadgeMap[reply.id])}
-															/>
+															{reply.badgeImage && (
+																<img
+																	src={reply.badgeImage}
+																	alt='뱃지'
+																	style={{width: 32, height: 32, cursor: "pointer"}}
+																	onClick={() => handlePreview(reply.badgeImage)}
+																/>
+															)}
 														</Box>
 													</Box>
 												</Box>
-												<Typography className={styles.replyText}>{reply.text}</Typography>
+												<Typography
+													className={styles.replyText}
+													component='pre'
+													sx={{whiteSpace: "pre-wrap", wordBreak: "break-word"}}>
+													{reply.text}
+												</Typography>
 												<Typography className={styles.replyTime}>{formatTime(reply.timestamp)}</Typography>
 											</Box>
 										))}
@@ -641,9 +1006,14 @@ const PostDetail = () => {
 						))}
 						<div ref={bottomRef} />
 					</Box>
+
+					{isLoadingMore && (
+						<Box display='flex' justifyContent='center' py={2}>
+							<CircularProgress color='success' size={28} />
+						</Box>
+					)}
 				</Box>
 			</PullToRefresh>
-
 			<Box className={`${styles.commentInputWrapper} ${isKeyboardOpen ? styles.keyboardOpen : ""}`}>
 				<TextField
 					fullWidth
@@ -665,7 +1035,7 @@ const PostDetail = () => {
 					onMouseDown={(e) => e.preventDefault()}
 					onClick={handleSubmit}
 					sx={{ml: 1}}>
-					등록
+					{isEditingComment ? "수정" : "등록"}
 				</Button>
 				{replyTargetId && (
 					<Button
@@ -679,7 +1049,6 @@ const PostDetail = () => {
 					</Button>
 				)}
 			</Box>
-
 			<Snackbar
 				open={snackbarOpen}
 				autoHideDuration={2000}
@@ -698,6 +1067,39 @@ const PostDetail = () => {
 					<img src={previewImage} alt='미리보기' style={{width: "100%", height: "auto"}} />
 				</DialogContent>
 			</Dialog>
+			<Menu
+				anchorEl={participantAnchorEl}
+				open={Boolean(participantAnchorEl)}
+				onClose={() => setParticipantAnchorEl(null)}
+				anchorOrigin={{vertical: "bottom", horizontal: "center"}}
+				transformOrigin={{vertical: "top", horizontal: "center"}}
+				PaperProps={{
+					style: {
+						maxHeight: 300,
+						width: "200px",
+						overflowY: "auto",
+					},
+				}}>
+				{participants.map((p, index) => (
+					<MenuItem key={p.user.id}>
+						<Box display='flex' alignItems='center' gap={1}>
+							<img
+								src={
+									p.user.profile_image ||
+									"https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/profile-images%2FGreenDayProfile.png?alt=media&token=dc457190-a5f4-4ea9-be09-39a31aafef7c"
+								}
+								alt='프로필'
+								style={{width: 28, height: 28, borderRadius: "50%", objectFit: "cover"}}
+							/>
+							<Typography fontWeight='bold' color='#388e3c'>
+								{p.user.displayName}
+							</Typography>
+							{p.user.badge_image && <img src={p.user.badge_image} alt='뱃지' style={{width: 20, height: 20}} />}
+						</Box>
+					</MenuItem>
+				))}
+			</Menu>
+			;
 		</Box>
 	);
 };
