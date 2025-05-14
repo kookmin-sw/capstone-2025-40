@@ -1,29 +1,38 @@
+import random
+from calendar import monthrange
 from collections import defaultdict
-
+from datetime import date, timedelta
 from django.core.mail import send_mail
-from django.db.models import F, Prefetch, Window, Q
+from django.shortcuts import get_object_or_404
+from django.contrib.auth import get_user_model
+from django.db.models import F, Prefetch, Window, Q, Count, Exists, OuterRef, Case, When, Value, BooleanField
 from django.db.models.functions import Rank
+from django.http import JsonResponse
 from django.utils.timezone import now
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework import generics, permissions, status
+from rest_framework.generics import ListAPIView, RetrieveAPIView, RetrieveUpdateAPIView
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
-from rest_framework import generics, permissions, status
-from .models import UserQuestAssignment, UserQuestResult, Tip, Comment, PostImage, CommentLike, Report, \
+from rest_framework.exceptions import ValidationError, PermissionDenied
+from .models import UserQuestAssignment, UserQuestResult, Tip, CommunityPost, Campaign, Comment, PostImage, CommentLike, Report, \
     CampaignParticipant, PostScrap, PostLike, PasswordResetCode
 from .pagination import RankingPagination
 from .serializers import UserSignupSerializer, UsernameLoginSerializer, UserQuestAssignmentSerializer, \
-    UserQuestResultSerializer, CommunityPostListSerializer, CommunityPostDetailSerializer, CommentSerializer, \
+    UserQuestResultSerializer, CommunityPostListSerializer, CommunityPostDetailSerializer, CommentSerializer, CommunityPostSerializer, CampaignSerializer,\
     CommentDetailSerializer, ReportSerializer, CampaignParticipantSerializer, UserProfileSerializer, \
     FindUsernameSerializer, PasswordResetCodeRequestSerializer, PasswordResetWithCodeSerializer, UserRankingSerializer
-from rest_framework_simplejwt.views import TokenObtainPairView
-from datetime import date, timedelta
-from django.contrib.auth import get_user_model
-from django.db.models import Exists, OuterRef, Case, When, Value, BooleanField
 
+
+
+
+
+
+User = get_user_model()
 
 class UserSignupView(APIView):
     def post(self, request):
@@ -38,7 +47,7 @@ class UsernameLoginView(TokenObtainPairView):
     serializer_class = UsernameLoginSerializer
 
 
-User = get_user_model()
+
 class UserProfileView(RetrieveAPIView):
     queryset = User.objects.all()
     serializer_class = UserProfileSerializer
@@ -47,7 +56,7 @@ class UserProfileView(RetrieveAPIView):
     lookup_url_kwarg = 'user_id'
 
 
-class MyPageView(RetrieveAPIView):
+class MyPageView(RetrieveUpdateAPIView):
     serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated]
 
@@ -196,6 +205,11 @@ class UserQuestResultCreateView(APIView):
         if use_camera and not photo_url:
             return Response({'error': '사진이 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
+
+        # 여기쯤에 로직 추가하면 될 듯.
+        # def AIcertification(image, prompt)
+
+
         # 인증 결과 저장
         result = UserQuestResult.objects.create(
             assignment=assignment,
@@ -224,11 +238,50 @@ class TodayQuestSummaryView(APIView):
         })
 
 
+class MonthlySuccessDaysAPIView(APIView):
+    permission_classes = [IsAuthenticated]
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-import random
+    def get(self, request):
+        """
+        Query Params:
+          - year: YYYY (e.g. 2025)
+          - month: MM   (1~12)
+        Response:
+          { "success_dates": ["2025-05-01", "2025-05-03", ...] }
+        """
+        # 1) year, month 파싱 및 유효성 체크
+        try:
+            year = int(request.query_params.get('year'))
+            month = int(request.query_params.get('month'))
+            _, _ = monthrange(year, month)
+        except (TypeError, ValueError):
+            return Response(
+                {"detail": "year, month를 올바르게 전달하세요. (예: ?year=2025&month=5)"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 2) UserQuestResult 테이블에서 assignment__assigned_date 기준으로 집계
+        qs = (
+            UserQuestResult.objects
+            .filter(
+                assignment__user=request.user,
+                assignment__assigned_date__year=year,
+                assignment__assigned_date__month=month
+            )
+            .values(day=F('assignment__assigned_date'))
+            .annotate(completed_count=Count('pk'))
+            .filter(completed_count=5)      # 하루 인증이 5건인 날만
+            .order_by('day')
+        )
+
+        # 3) 날짜 문자열 리스트로 변환
+        success_dates = [
+            entry['day'].strftime('%Y-%m-%d')
+            for entry in qs
+        ]
+
+        return Response({"success_dates": success_dates})
+
 
 
 class RandomTipView(APIView):
@@ -344,12 +397,7 @@ class LocalRankingListView(ListAPIView):
         ).order_by('-points')
 
 
-from django.http import JsonResponse
-from django.contrib.auth import get_user_model
-from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
 
-User = get_user_model()
 
 class DuplicateCheckAPIView(APIView): # 중복검사 api
     permission_classes = [AllowAny]
@@ -369,17 +417,6 @@ class DuplicateCheckAPIView(APIView): # 중복검사 api
 
         return JsonResponse({"exists": exists})
 
-
-# 나중에 옮길 예정
-# views.py
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import ValidationError, PermissionDenied
-from .models import CommunityPost, Campaign
-from .serializers import CommunityPostSerializer, CampaignSerializer
-from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
 
 CAMPAIGN_DATA_SCHEMA = openapi.Schema(
     type=openapi.TYPE_OBJECT,
