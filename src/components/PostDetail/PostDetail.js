@@ -190,7 +190,7 @@ const PostDetail = () => {
 			const commentData = res.data.results.map((comment) => ({
 				id: comment.id,
 				nickname: post?.noticeBoard === "캠페인 게시판" ? comment.user.name : comment.user.nickname,
-				profileImage: comment.user.profile_image || "기본 이미지 URL",
+				profileImage: comment.user.profile_image || "/default-profile.png",
 				badgeImage: comment.user.badge_image,
 				text: comment.content,
 				timestamp: new Date(comment.created_at),
@@ -200,7 +200,7 @@ const PostDetail = () => {
 				replies: (comment.replies || []).map((reply) => ({
 					id: reply.id,
 					nickname: post?.noticeBoard === "캠페인 게시판" ? reply.user.name : reply.user.nickname,
-					profileImage: reply.user.profile_image || "기본 이미지 URL",
+					profileImage: reply.user.profile_image || "/default-profile.png",
 					badgeImage: reply.user.badge_image,
 					text: reply.content,
 					timestamp: new Date(reply.created_at),
@@ -892,7 +892,7 @@ const PostDetail = () => {
 								{/* 댓글 내용 */}
 								<Box display='flex' alignItems='center' gap={1}>
 									<img
-										src='/default-profile.png'
+										src={comment.profileImage}
 										alt='댓글 프로필'
 										style={{
 											width: 32,
@@ -901,7 +901,7 @@ const PostDetail = () => {
 											objectFit: "cover",
 											cursor: "pointer",
 										}}
-										onClick={() => handlePreview("/default-profile.png")}
+										onClick={() => handlePreview(comment.profileImage)}
 									/>
 									<Box>
 										<Box display='flex' alignItems='center' gap={1}>
@@ -966,7 +966,7 @@ const PostDetail = () => {
 												</Box>
 												<Box display='flex' alignItems='center' gap={1}>
 													<img
-														src='/default-profile.png'
+														src={reply.profileImage}
 														alt='대댓글 프로필'
 														style={{
 															width: 32,
@@ -975,7 +975,7 @@ const PostDetail = () => {
 															objectFit: "cover",
 															cursor: "pointer",
 														}}
-														onClick={() => handlePreview("/default-profile.png")}
+														onClick={() => handlePreview(reply.profileImage)}
 													/>
 													<Box>
 														<Box display='flex' alignItems='center' gap={1}>
@@ -1089,12 +1089,12 @@ const PostDetail = () => {
 									"https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/profile-images%2FGreenDayProfile.png?alt=media&token=dc457190-a5f4-4ea9-be09-39a31aafef7c"
 								}
 								alt='프로필'
-								style={{width: 28, height: 28, borderRadius: "50%", objectFit: "cover"}}
+								style={{width: 32, height: 32, borderRadius: "50%", objectFit: "cover"}}
 							/>
 							<Typography fontWeight='bold' color='#388e3c'>
 								{p.user.displayName}
 							</Typography>
-							{p.user.badge_image && <img src={p.user.badge_image} alt='뱃지' style={{width: 20, height: 20}} />}
+							{p.user.badge_image && <img src={p.user.badge_image} alt='뱃지' style={{width: 32, height: 32}} />}
 						</Box>
 					</MenuItem>
 				))}
