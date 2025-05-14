@@ -6,7 +6,7 @@ from django.db.models.functions import Rank
 from django.utils.timezone import now
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView, RetrieveUpdateAPIView
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
@@ -47,7 +47,7 @@ class UserProfileView(RetrieveAPIView):
     lookup_url_kwarg = 'user_id'
 
 
-class MyPageView(RetrieveAPIView):
+class MyPageView(RetrieveUpdateAPIView):
     serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated]
 
