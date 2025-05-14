@@ -5,7 +5,7 @@ from .views import UserSignupView, UsernameLoginView, TodayAssignedQuestsView, U
     CommentLikeToggleView, ReportCreateView, CampaignParticipantToggleView, PostScrapToggleView, \
     PostLikeToggleView, ScrappedPostListView, JoinedCampaignPostListView, UserProfileView, MyPageView, \
     PasswordResetCodeRequestAPIView, PasswordResetWithCodeAPIView, FindUsernameAPIView, GlobalRankingListView, \
-    LocalRankingListView
+    LocalRankingListView, MonthlySuccessDaysAPIView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
@@ -19,6 +19,7 @@ urlpatterns = [
     path('profile/my/', MyPageView.as_view(), name='my-page'),
     path('my-quests/today/', TodayAssignedQuestsView.as_view(), name='today-quests'),
     path('my-quests/<int:assignment_id>/complete/', UserQuestResultCreateView.as_view(), name='quest-complete'),
+    path('my-quests/success-days/', MonthlySuccessDaysAPIView.as_view(), name='monthly-success-days'),
     path('tips/random/', RandomTipView.as_view(), name='random-tip'),
     path('my-quests/today/summary/', TodayQuestSummaryView.as_view(), name='today-quest-summary'),
     path('my-challenge-stats/', ChallengeStatsAPIView.as_view()),
