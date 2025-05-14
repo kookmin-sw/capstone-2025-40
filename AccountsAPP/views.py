@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 from django.core.mail import send_mail
-from django.db.models import F, Prefetch, Window
+from django.db.models import F, Prefetch, Window, Q
 from django.db.models.functions import Rank
 from django.utils.timezone import now
 from drf_yasg import openapi
@@ -452,6 +452,13 @@ class CommunityPostListCreateView(APIView):
         if post_type:
             queryset = queryset.filter(post_type=post_type)
 
+        search = request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(title__icontains=search) |
+                Q(content__icontains=search)
+            )
+
         # 페이지네이션 수동 적용 (DRF의 기본 페이지네이터 이용)
         from rest_framework.pagination import PageNumberPagination
 
@@ -631,7 +638,15 @@ class ScrappedPostListView(ListAPIView):
     pagination_class = PageNumberPagination
 
     def get_queryset(self):
-        return CommunityPost.objects.filter(scraps__user=self.request.user).order_by('-created_at')
+        qs = CommunityPost.objects.filter(scraps__user=self.request.user).order_by('-created_at')
+
+        search = self.request.query_params.get('search')
+        if search:
+            qs = qs.filter(
+                Q(title__icontains=search) |
+                Q(content__icontains=search)
+            )
+        return qs
 
 
 class CommentListCreateView(APIView):
@@ -871,4 +886,12 @@ class JoinedCampaignPostListView(ListAPIView):
     pagination_class = PageNumberPagination
 
     def get_queryset(self):
-        return CommunityPost.objects.filter(campaign__participants__user=self.request.user).order_by('-created_at')
+        qs = CommunityPost.objects.filter(campaign__participants__user=self.request.user).order_by('-created_at')
+
+        search = self.request.query_params.get('search')
+        if search:
+            qs = qs.filter(
+                Q(title__icontains=search) |
+                Q(content__icontains=search)
+            )
+        return qs
