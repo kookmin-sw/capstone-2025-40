@@ -33,6 +33,7 @@ const Challenge = () => {
 			const res = await axiosInstance.get("/users/rankings/local/");
 			const formatted = res.data.results.map((user) => ({
 				name: user.nickname,
+				username: user.username,
 				score: user.points,
 				rank: user.rank,
 			}));
@@ -75,6 +76,7 @@ const Challenge = () => {
 			const res = await axiosInstance.get("/users/rankings/global/");
 			const formatted = res.data.results.map((user) => ({
 				name: user.nickname,
+				username: user.username,
 				score: user.points,
 				rank: user.rank,
 			}));

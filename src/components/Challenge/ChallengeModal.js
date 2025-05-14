@@ -9,13 +9,17 @@ const ChallengeModal = ({open, onClose, rankData, title}) => {
 				<Typography className={styles.modalTitle}>{title || "내 랭킹 주변 보기"}</Typography>
 				<Box className={styles.modalContent}>
 					{rankData.map((r, i) => {
-						const isMe = r.name === "나";
+						const currentUser = JSON.parse(localStorage.getItem("user"));
+						const isMe = r.username === currentUser?.username;
 						const displayName = `${r.name} (${r.rank}위)`;
 
 						return (
-							<Box key={i} className={styles.modalListItem}>
-								<span className={isMe ? styles.modalHighlight : ""}>{displayName}</span>
-								<span className={isMe ? styles.modalHighlight : ""}>{r.score}점</span>
+							<Box
+								key={i}
+								className={styles.modalListItem}
+								style={isMe ? {backgroundColor: "#66bb6a", color: "#ffffff"} : {}}>
+								<span>{displayName}</span>
+								<span>{r.score}점</span>
 							</Box>
 						);
 					})}
