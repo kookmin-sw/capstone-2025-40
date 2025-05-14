@@ -661,6 +661,22 @@ class PostLikeToggleView(APIView):
         post.save(update_fields=['like_count'])
         post.refresh_from_db(fields=['like_count'])
 
+        if liked:
+            # 1) 작성자에게 알림
+            send_push_to_user(
+                post.user,
+                title='새로운 좋아요',
+                body=f'{request.user.username}님이 게시글 "{getattr(post, "title", post_id)}"에 좋아요를 눌렀습니다.',
+                data={'click_action': f'/community/posts/{post.id}'}
+            )
+            # 2) 좋아요 누른 사람에게 알림
+            send_push_to_user(
+                request.user,
+                title='좋아요 확인',
+                body=f'{post.user.username}님의 게시글에 좋아요를 누르셨습니다!',
+                data={'click_action': f'/community/posts/{post.id}'}
+            )
+
         return Response(
             {'liked': liked, 'like_count': post.like_count},
             status=status.HTTP_200_OK
