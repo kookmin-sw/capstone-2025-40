@@ -21,7 +21,7 @@ from .models import (
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
-    list_display = ['username', 'email', 'name', 'city', 'district', 'points', 'is_staff', 'is_active']
+    list_display = ['username', 'nickname', 'email', 'name', 'city', 'district', 'points', 'is_staff', 'is_active']
     fieldsets = UserAdmin.fieldsets + (
         ('Additional Info', {'fields': ('name', 'city', 'district', 'profile_image', 'points')}),
     )
