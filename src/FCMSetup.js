@@ -2,6 +2,7 @@ import React, {useEffect, useState} from "react";
 import {messaging, getToken, onMessage} from "./firebase";
 import settings from "./settings";
 import Snackbar from "@mui/material/Snackbar";
+import axiosInstance from "./axiosInstance";
 
 const FCMSetup = () => {
 	const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -22,6 +23,17 @@ const FCMSetup = () => {
 						if (currentToken) {
 							console.log("FCM 토큰:", currentToken);
 							// 서버로 전송하는 API 호출
+							axiosInstance
+								.post("/users/fcm/devices/", {
+									registration_token: currentToken,
+								})
+								.then(() => {
+									console.log("FCM 토큰 서버 전송 완료");
+									localStorage.setItem("fcmToken", currentToken);
+								})
+								.catch((error) => {
+									console.error("FCM 토큰 서버 전송 오류:", error);
+								});
 						}
 					});
 				}
