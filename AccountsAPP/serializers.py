@@ -161,6 +161,7 @@ class CommunityPostListSerializer(serializers.ModelSerializer):
     excerpt = serializers.SerializerMethodField()
     participant_limit = serializers.SerializerMethodField()
     current_participant_count = serializers.SerializerMethodField()
+    thumbnail_image = serializers.SerializerMethodField()
 
     class Meta:
         model = CommunityPost
@@ -172,6 +173,7 @@ class CommunityPostListSerializer(serializers.ModelSerializer):
             'created_at',
             'like_count',
             'comment_count',
+            'thumbnail_image',
             # 캠페인 전용 없으면 null 처리
             'participant_limit',
             'current_participant_count',
@@ -192,6 +194,10 @@ class CommunityPostListSerializer(serializers.ModelSerializer):
         if obj.post_type == 'campaign' and hasattr(obj, 'campaign'):
             return obj.campaign.current_participant_count
         return None
+
+    def get_thumbnail_image(self, obj):
+        first_image = obj.images.order_by('id').first()
+        return first_image.image_url if first_image else None
 
 
 class CommentSerializer(serializers.ModelSerializer):

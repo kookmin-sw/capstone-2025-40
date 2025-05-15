@@ -5,7 +5,7 @@ from .views import UserSignupView, UsernameLoginView, TodayAssignedQuestsView, U
     CommentLikeToggleView, ReportCreateView, CampaignParticipantToggleView, PostScrapToggleView, \
     PostLikeToggleView, ScrappedPostListView, JoinedCampaignPostListView, UserProfileView, MyPageView, \
     PasswordResetCodeRequestAPIView, PasswordResetWithCodeAPIView, FindUsernameAPIView, GlobalRankingListView, \
-    LocalRankingListView, MonthlySuccessDaysAPIView, FCMDeviceRegisterView, FCMDeviceUnregisterView
+    LocalRankingListView, MonthlySuccessDaysAPIView, FCMDeviceManageView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
@@ -40,8 +40,6 @@ urlpatterns = [
     path('community/posts/<int:post_id>/report/', ReportCreateView.as_view(), name='post-report'),
     path('community/posts/<int:post_id>/comments/<int:comment_id>/report/', ReportCreateView.as_view(), name='comment-report'),
 
-    # 토큰 등록/갱신 (POST)
-    path('fcm/devices/', FCMDeviceRegisterView.as_view(), name='fcm_device_register'),
-    # 토큰 삭제 (DELETE)
-    path('fcm/devices/', FCMDeviceUnregisterView.as_view(), name='fcm_device_unregister'),
+    # 토큰 등록/갱신 (POST) 삭제 (DELETE)
+    path('fcm/devices/', FCMDeviceManageView.as_view(), name='fcm_device_manage'),
 ]
