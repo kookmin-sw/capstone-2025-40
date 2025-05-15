@@ -473,3 +473,5 @@ $RECYCLE.BIN/
 .idea/capstone-2025-40.iml
 .idea/misc.xml
 /.idea
+
+/secrets/
