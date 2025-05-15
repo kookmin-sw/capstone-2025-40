@@ -74,33 +74,42 @@ const Community = () => {
 	const swipeWrapperRef = useRef(null);
 	const scrollTimeoutRef = useRef(null);
 	const isFetchingRef = useRef(false);
+	const scrollPositions = useRef({campaign: 0, free: 0, info: 0});
 
 	const [postData, setPostData] = useState({campaign: [], free: [], info: []});
 	const [nextPageUrl, setNextPageUrl] = useState({campaign: null, free: null, info: null});
 	const [loadingMore, setLoadingMore] = useState(false);
 
 	useEffect(() => {
-		const fetchPosts = async () => {
-			const post_type = tabKeys[tabIndex];
+		const fetchAllPosts = async () => {
+			setInitialLoading(true);
 			try {
-				setInitialLoading(true);
-				const res = await axiosInstance.get(`/users/community/posts/`, {
-					params: {
-						post_type,
-						page: 1,
-						search: searchKeyword.trim(),
-					},
+				const promises = tabKeys.map((post_type) =>
+					axiosInstance.get(`/users/community/posts/`, {
+						params: {
+							post_type,
+							page: 1,
+							search: searchKeyword.trim(),
+						},
+					})
+				);
+				const results = await Promise.all(promises);
+				const newPostData = {};
+				const newNextPageUrl = {};
+				tabKeys.forEach((key, i) => {
+					newPostData[key] = results[i].data.results;
+					newNextPageUrl[key] = results[i].data.next;
 				});
-				setPostData((prev) => ({...prev, [post_type]: res.data.results}));
-				setNextPageUrl((prev) => ({...prev, [post_type]: res.data.next}));
+				setPostData(newPostData);
+				setNextPageUrl(newNextPageUrl);
 			} catch (err) {
 				console.error(err);
 			} finally {
 				setInitialLoading(false);
 			}
 		};
-		fetchPosts();
-	}, [tabIndex, searchTrigger]);
+		fetchAllPosts();
+	}, [searchTrigger]);
 
 	useEffect(() => {
 		const handleScroll = async (e) => {
@@ -183,8 +192,11 @@ const Community = () => {
 	};
 
 	const handleChange = (event, newValue) => {
+		const currentList = document.querySelectorAll(`.${styles.listWrapper}`)[tabIndex];
+		if (currentList) scrollPositions.current[tabKeys[tabIndex]] = currentList.scrollTop;
+
 		setTabIndex(newValue);
-		setSearchKeyword("");
+		// setSearchKeyword("");
 		sessionStorage.setItem("communityTabIndex", newValue);
 		if (swipeWrapperRef.current) {
 			swipeWrapperRef.current.scrollTo({top: 0});
@@ -192,13 +204,21 @@ const Community = () => {
 	};
 
 	const handleSwipe = (index) => {
+		const currentList = document.querySelectorAll(`.${styles.listWrapper}`)[tabIndex];
+		if (currentList) scrollPositions.current[tabKeys[tabIndex]] = currentList.scrollTop;
+
 		setTabIndex(index);
-		setSearchKeyword("");
+		// setSearchKeyword("");
 		sessionStorage.setItem("communityTabIndex", index);
 		if (swipeWrapperRef.current) {
 			swipeWrapperRef.current.scrollTo({top: 0});
 		}
 	};
+
+	useEffect(() => {
+		const wrapper = document.querySelectorAll(`.${styles.listWrapper}`)[tabIndex];
+		if (wrapper) wrapper.scrollTop = scrollPositions.current[tabKeys[tabIndex]] || 0;
+	}, [tabIndex]);
 
 	const handleTouchStart = (e) => {
 		const touch = e.touches[0];
@@ -267,8 +287,8 @@ const Community = () => {
 						hysteresis={0.3}
 						autoHeight
 						animateHeight>
-						{tabKeys.map((key) => (
-							<Box key={key} className={styles.listWrapper}>
+						{tabKeys.map((key, index) => (
+							<Box key={key} className={styles.listWrapper} hidden={tabIndex !== index}>
 								<List className={styles.list}>
 									{initialLoading ? (
 										<Box textAlign='center' py={5}>
