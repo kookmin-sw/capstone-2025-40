@@ -43,3 +43,17 @@ def send_evening_remaining_quests():
             body=f'아직 오늘의 챌린지가 {remaining}개 남았어요! 환경을 위해 도전해주세요! 🌱',
             data={'click_action': '/quests/today'}
         )
+
+@shared_task
+def send_every_minute_test_notification():
+    """
+    테스트용: 매분 모든 활성 사용자에게
+    '테스트 푸시입니다' 알림을 보냅니다.
+    """
+    for user in User.objects.filter(is_active=True):
+        send_push_to_user(
+            user,
+            title='⏱ 테스트 알림',
+            body='1분마다 잘 오나요? 테스트 푸시입니다.',
+            data={'click_action': '/'}  # 원하는 클릭 액션 경로
+        )
