@@ -52,6 +52,9 @@ const formatDateOnly = (date) => {
 };
 
 const PostDetail = () => {
+	// Swiping detection for horizontal gestures (generalized, disables pull-to-refresh)
+	const isSwipingImagesRef = useRef(false);
+	const touchStartRef = useRef({x: 0, y: 0});
 	const [editCommentId, setEditCommentId] = useState(null);
 	const [reportType, setReportType] = useState("post");
 	const [commentMenuAnchorEl, setCommentMenuAnchorEl] = useState(null);
@@ -730,8 +733,26 @@ const PostDetail = () => {
 				<Typography className={styles.boardTitle}>{post.noticeBoard}</Typography>
 				<MoreVertIcon className={styles.moreButton} onClick={handleMenuOpen} sx={{cursor: "pointer"}} />
 			</Box>
-			<PullToRefresh onRefresh={handleRefresh}>
-				<Box className={styles.scrollableContent} ref={scrollableContentRef}>
+			<PullToRefresh onRefresh={handleRefresh} shouldPullToRefresh={() => !isSwipingImagesRef.current}>
+				<Box
+					className={styles.scrollableContent}
+					ref={scrollableContentRef}
+					onTouchStart={(e) => {
+						touchStartRef.current = {
+							x: e.touches[0].clientX,
+							y: e.touches[0].clientY,
+						};
+					}}
+					onTouchMove={(e) => {
+						const dx = Math.abs(e.touches[0].clientX - touchStartRef.current.x);
+						const dy = Math.abs(e.touches[0].clientY - touchStartRef.current.y);
+						isSwipingImagesRef.current = dx > dy;
+					}}
+					onTouchEnd={() => {
+						setTimeout(() => {
+							isSwipingImagesRef.current = false;
+						}, 200);
+					}}>
 					<Box className={styles.content}>
 						<Box display='flex' alignItems='center' gap={1} mb={1}>
 							<img
