@@ -7,6 +7,8 @@ from celery.schedules import crontab
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
 app = Celery('config')
+# 스케줄 점검 주기를 10초로 줄입니다 (테스트용)
+app.conf.beat_max_loop_interval = 10
 # 2) settings.py 의 CELERY_* 옵션 읽기
 app.config_from_object('django.conf:settings', namespace='CELERY')
 # 3) your_app/tasks.py 등의 @shared_task 자동 탐색
@@ -23,3 +25,11 @@ app.conf.beat_schedule = {
         'schedule': crontab(hour=18, minute=0),
     },
 }
+
+app.conf.beat_schedule.update({
+    'every-minute-test': {
+        'task': 'your_app.tasks.send_every_minute_test_notification',
+        # crontab(minute='*') 또는 60초 단위 Schedule
+        'schedule': crontab(minute='*'),
+    },
+})
