@@ -33,21 +33,19 @@ User = get_user_model()
 
 
 ######################################################### PWA 알림
-class FCMDeviceRegisterView(APIView):
+class FCMDeviceManageView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = FCMDeviceSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        FCMDevice.objects.update_or_create(
-            user=request.user,
-            registration_token=serializer.validated_data['registration_token']
-        )
+        token = serializer.validated_data['registration_token']
+
+        # 1) 기존 토큰 전부 삭제
+        FCMDevice.objects.filter(user=request.user).delete()
+        # 2) 새 토큰 생성
+        FCMDevice.objects.create(user=request.user, registration_token=token)
         return Response(status=201)
-
-
-class FCMDeviceUnregisterView(APIView):
-    permission_classes = [IsAuthenticated]
 
     def delete(self, request):
         token = request.data.get('registration_token')
