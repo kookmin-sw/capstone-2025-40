@@ -38,6 +38,22 @@ DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
 
+
+# ── Celery 기본 설정 ──
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
+if DEBUG:
+    # 로컬: 브로커 없이 즉시 실행(eager) 모드
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
+else:
+    # 운영: Redis 브로커/백엔드 URL을 env에서 읽어오기
+    CELERY_BROKER_URL      = env('CELERY_BROKER_URL')
+    CELERY_RESULT_BACKEND  = env('CELERY_RESULT_BACKEND')
+
+
 ################################################################## PWA알림 설정부
 # ─── 로깅용 디렉토리 생성 ─────────────────────────────
 LOG_DIR = BASE_DIR / 'logs'
