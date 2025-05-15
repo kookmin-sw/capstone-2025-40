@@ -3,7 +3,7 @@ import imageCompression from "browser-image-compression";
 import {ref, uploadBytes, getDownloadURL} from "firebase/storage";
 import {storage} from "./firebase";
 
-const uploadImage = async (file) => {
+const uploadImage = async (file, pathAndName) => {
 	try {
 		// 이미지 압축 옵션
 		const options = {
@@ -14,8 +14,7 @@ const uploadImage = async (file) => {
 
 		// 압축 실행
 		const compressedFile = await imageCompression(file, options);
-
-		const fileRef = ref(storage, `quest-photos/${Date.now()}_${compressedFile.name}`);
+		const fileRef = ref(storage, pathAndName || `quest-photos/${Date.now()}_${compressedFile.name}`);
 		await uploadBytes(fileRef, compressedFile);
 		const downloadURL = await getDownloadURL(fileRef);
 		return downloadURL;

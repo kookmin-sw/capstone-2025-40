@@ -28,16 +28,23 @@ const Challenge = () => {
 
 	const [personalRankData, setPersonalRankData] = useState([]);
 	const [localRankData, setLocalRankData] = useState([]);
+	const [myPersonalRank, setMyPersonalRank] = useState(null);
+	const [myLocalRank, setMyLocalRank] = useState(null);
+
 	const fetchLocalRanking = useCallback(async () => {
 		try {
 			const res = await axiosInstance.get("/users/rankings/local/");
 			const formatted = res.data.results.map((user) => ({
 				name: user.nickname,
 				username: user.username,
-				score: user.points,
+				score: user.points ?? 0,
 				rank: user.rank,
 			}));
 			setLocalRankData(formatted);
+
+			const user = JSON.parse(localStorage.getItem("user"));
+			const myData = res.data.results.find((u) => u.username === user.username);
+			if (myData) setMyLocalRank(myData.rank);
 		} catch (error) {
 			console.error("동네 랭킹 데이터 불러오기 실패:", error);
 		}
@@ -77,10 +84,14 @@ const Challenge = () => {
 			const formatted = res.data.results.map((user) => ({
 				name: user.nickname,
 				username: user.username,
-				score: user.points,
+				score: user.points ?? 0,
 				rank: user.rank,
 			}));
 			setPersonalRankData(formatted);
+
+			const user = JSON.parse(localStorage.getItem("user"));
+			const myData = res.data.results.find((u) => u.username === user.username);
+			if (myData) setMyPersonalRank(myData.rank);
 		} catch (error) {
 			console.error("개인 랭킹 데이터 불러오기 실패:", error);
 		}
@@ -207,11 +218,11 @@ const Challenge = () => {
 				<Box className={styles.rankingBox}>
 					<Box className={styles.rankingItem} onClick={() => openModal("개인 랭킹", personalRankData)}>
 						<div className={styles.label}>🥇 개인 랭킹</div>
-						<div className={styles.rank}>15위</div>
+						<div className={styles.rank}>{myPersonalRank ? `${myPersonalRank}위` : "-"}</div>
 					</Box>
 					<Box className={styles.rankingItem} onClick={() => openModal("동네 랭킹", localRankData)}>
 						<div className={styles.label}>🏡 동네 랭킹</div>
-						<div className={styles.rank}>2위</div>
+						<div className={styles.rank}>{myLocalRank ? `${myLocalRank}위` : "-"}</div>
 					</Box>
 				</Box>
 

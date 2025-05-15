@@ -55,6 +55,8 @@ const Signup = () => {
 				name: username,
 				city,
 				district,
+				nickname,
+				points: 0,
 			};
 			setLoading(true);
 			dispatch(signup(formData))

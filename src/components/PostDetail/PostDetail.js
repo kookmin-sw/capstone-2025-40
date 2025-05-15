@@ -586,7 +586,13 @@ const PostDetail = () => {
 	const handleEditPost = () => {
 		handleMenuClose();
 
-		const imageArray = post.image ? [{id: crypto.randomUUID(), url: post.image}] : [];
+		const imageArray =
+			Array.isArray(post.images) && post.images.length > 0
+				? post.images.map((url) => ({
+						id: crypto.randomUUID(),
+						url,
+				  }))
+				: [];
 
 		navigate("/post/create", {
 			state: {

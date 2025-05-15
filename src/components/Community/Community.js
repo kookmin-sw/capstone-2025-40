@@ -69,6 +69,7 @@ const Community = () => {
 	// const normalize = (str) => str.replace(/\s/g, "").toLowerCase();
 	// const keyword = normalize(searchKeyword);
 	const [isVerticalScroll, setIsVerticalScroll] = useState(true);
+	const [canRefresh, setCanRefresh] = useState(true);
 	const touchStartRef = useRef({x: 0, y: 0});
 	const swipeWrapperRef = useRef(null);
 	const scrollTimeoutRef = useRef(null);
@@ -106,6 +107,12 @@ const Community = () => {
 			const el = e.target;
 
 			if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+
+			if (el.scrollTop === 0) {
+				setCanRefresh(true);
+			} else {
+				setCanRefresh(false);
+			}
 
 			if (el.scrollTop + el.clientHeight >= el.scrollHeight - 100) {
 				const post_type = tabKeys[tabIndex];
@@ -243,7 +250,7 @@ const Community = () => {
 					검색
 				</Button>
 			</Box>
-			<PullToRefresh onRefresh={handleRefresh} disabled={!isVerticalScroll}>
+			<PullToRefresh onRefresh={handleRefresh} disabled={!isVerticalScroll || !canRefresh}>
 				<Box
 					className={styles.swipeWrapper}
 					onTouchStart={handleTouchStart}
@@ -333,22 +340,40 @@ const Community = () => {
 																</>
 															}
 														/>
-
 														{/* 썸네일 이미지 */}
-														{post.image && (
-															<Box sx={{minWidth: 80, minHeight: 60, ml: 1}}>
-																<img
-																	src={post.image}
-																	alt='썸네일'
-																	style={{
-																		width: 80,
-																		height: 60,
-																		objectFit: "cover",
-																		borderRadius: "8px",
-																	}}
-																/>
-															</Box>
-														)}
+														{(() => {
+															let url;
+															try {
+																if (typeof post.thumbnail_image === "string") {
+																	const parsed = JSON.parse(post.thumbnail_image.replace(/'/g, '"'));
+																	url = parsed.image_url;
+																} else if (
+																	typeof post.thumbnail_image === "object" &&
+																	post.thumbnail_image?.image_url
+																) {
+																	url = post.thumbnail_image.image_url;
+																}
+															} catch (e) {
+																console.error("썸네일 파싱 오류:", e);
+															}
+
+															return (
+																url && (
+																	<Box sx={{minWidth: 80, minHeight: 60, ml: 1}}>
+																		<img
+																			src={url}
+																			alt='썸네일'
+																			style={{
+																				width: 80,
+																				height: 60,
+																				objectFit: "cover",
+																				borderRadius: "8px",
+																			}}
+																		/>
+																	</Box>
+																)
+															);
+														})()}
 													</ListItemButton>
 												</Paper>
 											))}

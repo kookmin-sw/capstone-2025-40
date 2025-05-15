@@ -167,6 +167,7 @@ const Profile = () => {
 		const confirmSave = window.confirm("닉네임을 저장하시겠습니까?");
 		if (!confirmSave) return;
 
+		setIsLoading(true);
 		try {
 			await axiosInstance.patch("/users/profile/my/", {
 				nickname: nickname,
@@ -175,6 +176,7 @@ const Profile = () => {
 			console.error("닉네임 저장 실패:", error);
 		} finally {
 			setEditingNickname(false);
+			setIsLoading(false);
 		}
 	};
 
@@ -182,6 +184,7 @@ const Profile = () => {
 		const file = e.target.files[0];
 		if (!file) return;
 
+		setIsLoading(true);
 		try {
 			const {user_id, username} = JSON.parse(localStorage.getItem("user"));
 			const filename = `${user_id}-${username}-profileimage-${Date.now()}`;
@@ -202,6 +205,8 @@ const Profile = () => {
 			});
 		} catch (error) {
 			console.error("프로필 이미지 업로드 실패:", error);
+		} finally {
+			setIsLoading(false);
 		}
 	};
 
@@ -302,9 +307,20 @@ const Profile = () => {
 		}
 	};
 
-	const handleLogout = () => {
+	const handleLogout = async () => {
 		const confirmLogout = window.confirm("로그아웃 하시겠습니까?");
 		if (confirmLogout) {
+			const fcmToken = localStorage.getItem("fcmToken");
+			if (fcmToken) {
+				try {
+					await axiosInstance.delete("/users/fcm/devices/", {
+						data: {registration_token: fcmToken},
+					});
+					console.log("FCM 토큰 삭제 완료");
+				} catch (error) {
+					console.error("FCM 토큰 삭제 실패:", error);
+				}
+			}
 			dispatch(logout());
 			navigate("/login");
 		}
@@ -312,6 +328,18 @@ const Profile = () => {
 
 	return (
 		<Box>
+			{isLoading && (
+				<Box
+					sx={{
+						position: "fixed",
+						top: "33vh",
+						left: "50%",
+						transform: "translate(-50%, -50%)",
+						zIndex: 2000,
+					}}>
+					<CircularProgress color='success' />
+				</Box>
+			)}
 			{/* 프로필 */}
 			<Box className={styles.profileHeader}>
 				<Paper elevation={3} className={styles.profilePaper}>
@@ -635,6 +663,7 @@ const Profile = () => {
 											const confirmChange = window.confirm("뱃지를 변경하시겠습니까?");
 											if (confirmChange) {
 												const badgeValue = badge.url || null;
+												setIsLoading(true);
 												try {
 													await axiosInstance.patch("/users/profile/my/", {
 														badge_image: badgeValue,
@@ -643,6 +672,8 @@ const Profile = () => {
 													setOpenBadgeModal(false);
 												} catch (error) {
 													console.error("뱃지 변경 실패:", error);
+												} finally {
+													setIsLoading(false);
 												}
 											}
 										}}

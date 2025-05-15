@@ -159,15 +159,17 @@ const Home = () => {
 				},
 				{
 					id: 2,
-					title: "환경 동아리 B팀 챌린지 🌏",
-					startDate: "2025-06-01",
+					title: "일회용품 줄이기 챌린지 🌏",
+					startDate: "2025-05-01",
 					endDate: "2025-06-30",
 					badgeImage: null,
-					participants: ["홍길동 (방장)", "김환경", "이지구", "최그린"],
+					participants: ["성창민 (방장)", "박상엄", "정하람", "채주원 (나)"],
 					challenges: [
 						{id: 7, text: "텀블러 사용하기", useCamera: true},
-						{id: 8, text: "플로깅 참여하기", useCamera: true},
-						{id: 9, text: "친환경 제품 구매하기", useCamera: false},
+						{id: 8, text: "배달 시 일회용품 거절하기", useCamera: true},
+						{id: 9, text: "재사용 빨대 사용하기", useCamera: true},
+						{id: 10, text: "포장 대신 매장 식사 선택하기", useCamera: false},
+						{id: 11, text: "개인 식기(수저/컵) 챙기기", useCamera: true},
 					],
 				},
 			]);
@@ -250,7 +252,8 @@ const Home = () => {
 						setAiStatus("loading");
 
 						const startTime = Date.now();
-						const photoUrl = await uploadImage(file); // Firebase 업로드
+						const fileName = `quest-photos/${Date.now()}_${file.name}`;
+						const photoUrl = await uploadImage(file, fileName); // Firebase 업로드
 						await completeQuest(photoUrl); // 서버에 photo_url 전달
 						const elapsed = Date.now() - startTime;
 						const remaining = 5000 - elapsed;
@@ -451,7 +454,10 @@ const Home = () => {
 									display='flex'
 									alignItems='center'
 									gap={0.5}
-									onClick={(e) => setParticipantAnchorEl(e.currentTarget)}
+									onClick={(e) => {
+										setParticipantAnchorEl(e.currentTarget);
+										setSelectedChallenge(group); // Save current group
+									}}
 									sx={{cursor: "pointer"}}>
 									<GroupsIcon sx={{color: "#4caf50", fontSize: "18px"}} />
 									<Typography sx={{color: "#4caf50", fontSize: "14px"}}>{group.participants.length}</Typography>
@@ -463,7 +469,7 @@ const Home = () => {
 								onClose={() => setParticipantAnchorEl(null)}
 								anchorOrigin={{vertical: "bottom", horizontal: "center"}}
 								transformOrigin={{vertical: "top", horizontal: "center"}}>
-								{group.participants.map((name) => (
+								{(selectedChallenge?.participants || []).map((name) => (
 									<MenuItem key={name} sx={{fontSize: "14px", color: "#555"}}>
 										{name}
 									</MenuItem>

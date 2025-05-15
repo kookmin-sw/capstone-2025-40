@@ -15,6 +15,9 @@ import {CSS} from "@dnd-kit/utilities";
 import {area} from "../../area";
 
 import axiosInstance from "../../axiosInstance";
+import uploadImage from "../../uploadImage";
+import {ref} from "firebase/storage";
+import {storage} from "../../firebase";
 
 const SortableImage = ({img, index, onDelete}) => {
 	const {attributes, listeners, setNodeRef, transform, transition} = useSortable({id: img.id});
@@ -59,6 +62,7 @@ const PostCreate = () => {
 	useEffect(() => {
 		if (isEditMode) {
 			const post = state.post;
+			console.log("###post: ", post);
 			setTitle(post.title || "");
 			setContent(post.content || "");
 			setImages(post.images || []);
@@ -83,7 +87,11 @@ const PostCreate = () => {
 			alert("이미지는 5장까지만 등록할 수 있습니다.");
 			return;
 		}
-		const newImages = files.map((file) => ({id: crypto.randomUUID(), url: URL.createObjectURL(file)}));
+		const newImages = files.map((file) => ({
+			id: crypto.randomUUID(),
+			url: URL.createObjectURL(file),
+			file,
+		}));
 		setImages((prev) => [...prev, ...newImages]);
 	};
 
@@ -105,28 +113,46 @@ const PostCreate = () => {
 			return;
 		}
 
-		const postData = {
-			title,
-			content,
-			post_type: isCampaign ? "campaign" : state?.noticeBoard === "정보 게시판" ? "info" : "free",
-		};
-
-		if (isCampaign) {
-			postData.campaign_data = {
-				city,
-				district,
-				start_date: startDate?.toLocaleDateString("sv-SE"),
-				end_date: endDate?.toLocaleDateString("sv-SE"),
-				participant_limit: Number(recruitment),
-			};
-		}
-
 		try {
+			let postId = isEditMode ? state.post.id : null;
+
+			const uploadedImages = [];
+			for (let i = 0; i < images.length; i++) {
+				const file = images[i].file;
+				if (file) {
+					const fileName = `post-${postId ?? "new"}-image-${i + 1}`;
+					const fileRef = ref(storage, `community-images/${fileName}`);
+					const imageUrl = await uploadImage(file, fileRef);
+					uploadedImages.push({image_url: imageUrl});
+				} else if (images[i].url) {
+					uploadedImages.push({image_url: images[i].url});
+				}
+			}
+
+			const postData = {
+				title,
+				content,
+				post_type: isCampaign ? "campaign" : state?.noticeBoard === "정보 게시판" ? "info" : "free",
+				images: uploadedImages,
+			};
+
+			if (isCampaign) {
+				postData.campaign_data = {
+					city,
+					district,
+					start_date: startDate?.toLocaleDateString("sv-SE"),
+					end_date: endDate?.toLocaleDateString("sv-SE"),
+					participant_limit: Number(recruitment),
+				};
+			}
+
 			if (isEditMode) {
-				await axiosInstance.patch(`users/community/posts/${state.post.id}/`, postData);
+				await axiosInstance.patch(`users/community/posts/${postId}/`, postData);
+
 				alert("게시글이 수정되었습니다.");
 			} else {
 				await axiosInstance.post("users/community/posts/", postData);
+
 				alert("게시글이 등록되었습니다.");
 			}
 			setLoading(false);
