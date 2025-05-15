@@ -17,18 +17,17 @@ app.autodiscover_tasks()
 # 4) 스케줄러: 매일 9시·18시 태스크 실행 설정
 app.conf.beat_schedule = {
     'morning-encouragement': {
-        'task': 'your_app.tasks.send_morning_encouragement',
+        'task': 'AccountsAPP.tasks.send_morning_encouragement',
         'schedule': crontab(hour=9, minute=0),
     },
     'evening-remaining-quests': {
-        'task': 'your_app.tasks.send_evening_remaining_quests',
+        'task': 'AccountsAPP.tasks.send_evening_remaining_quests',
         'schedule': crontab(hour=18, minute=0),
     },
 }
-
 app.conf.beat_schedule.update({
     'every-minute-test': {
-        'task': 'your_app.tasks.send_every_minute_test_notification',
+        'task': 'AccountsAPP.tasks.send_every_minute_test_notification',
         # crontab(minute='*') 또는 60초 단위 Schedule
         'schedule': crontab(minute='*'),
     },

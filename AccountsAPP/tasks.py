@@ -43,7 +43,7 @@ def send_evening_remaining_quests():
             body=f'아직 오늘의 챌린지가 {remaining}개 남았어요! 환경을 위해 도전해주세요! 🌱',
             data={'click_action': '/quests/today'}
         )
-        
+
 @shared_task
 def send_every_minute_test_notification():
     """
