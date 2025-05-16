@@ -281,45 +281,77 @@ const MyPosts = () => {
 										</Box>
 									) : (
 										<>
-											{filteredPosts[key].map((post) => (
-												<Paper key={post.id} elevation={3} className={styles.paperItem}>
-													<Box
-														onClick={() =>
-															navigate(`/post/${post.id}`, {
-																state: {
-																	post,
-																	fromMyPosts: true,
-																},
-															})
-														}>
-														<ListItemButton>
-															<Box display='flex' justifyContent='space-between' width='100%' alignItems='center'>
-																<ListItemText
-																	className={styles.textWrapper}
-																	primary={
-																		<Typography
-																			variant='subtitle1'
-																			className={styles.ellipsis}
-																			sx={{color: "#388e3c", fontWeight: "bold"}}>
-																			{post.title}
-																		</Typography>
-																	}
-																	secondary={
-																		<>
-																			<Typography variant='body2' color='text.secondary' className={styles.ellipsis}>
-																				{post.excerpt || post.content}
+											{filteredPosts[key].map((post) => {
+												let thumbnailUrl;
+												try {
+													if (typeof post.thumbnail_image === "string") {
+														const parsed = JSON.parse(post.thumbnail_image.replace(/'/g, '"'));
+														thumbnailUrl = parsed.image_url;
+													} else if (typeof post.thumbnail_image === "object" && post.thumbnail_image?.image_url) {
+														thumbnailUrl = post.thumbnail_image.image_url;
+													}
+												} catch (e) {
+													console.error("썸네일 파싱 오류:", e);
+												}
+												return (
+													<Paper key={post.id} elevation={3} className={styles.paperItem}>
+														<Box
+															onClick={() =>
+																navigate(`/post/${post.id}`, {
+																	state: {
+																		post,
+																		fromMyPosts: true,
+																	},
+																})
+															}>
+															<ListItemButton>
+																<Box display='flex' justifyContent='space-between' width='100%' alignItems='center'>
+																	<ListItemText
+																		className={styles.textWrapper}
+																		primary={
+																			<Typography
+																				variant='subtitle1'
+																				className={styles.ellipsis}
+																				sx={{color: "#388e3c", fontWeight: "bold"}}>
+																				{post.title}
 																			</Typography>
+																		}
+																		secondary={
+																			<>
+																				<Typography variant='body2' color='text.secondary' className={styles.ellipsis}>
+																					{post.excerpt || post.content}
+																				</Typography>
 
-																			{/* 캠페인 게시판일 때 */}
-																			{post.post_type === "campaign" ? (
-																				<>
-																					<Box display='flex' gap={2} mt={1} alignItems='center'>
-																						<Box display='flex' alignItems='center' gap={0.5} sx={{color: "#4caf50"}}>
-																							<GroupsIcon fontSize='small' />
-																							<Typography variant='caption'>
-																								{post.current_participant_count} / {post.participant_limit}
+																				{/* 캠페인 게시판일 때 */}
+																				{post.post_type === "campaign" ? (
+																					<>
+																						<Box display='flex' gap={2} mt={1} alignItems='center'>
+																							<Box display='flex' alignItems='center' gap={0.5} sx={{color: "#4caf50"}}>
+																								<GroupsIcon fontSize='small' />
+																								<Typography variant='caption'>
+																									{post.current_participant_count} / {post.participant_limit}
+																								</Typography>
+																							</Box>
+																							<Box display='flex' alignItems='center' gap={0.5} sx={{color: "#f28b82"}}>
+																								<ThumbUpOffAltIcon fontSize='small' />
+																								<Typography variant='caption'>{post.like_count}</Typography>
+																							</Box>
+																							<Box display='flex' alignItems='center' gap={0.5} sx={{color: "#64b5f6"}}>
+																								<ChatIcon fontSize='small' />
+																								<Typography variant='caption'>{post.comment_count}</Typography>
+																							</Box>
+																						</Box>
+																						<Box>
+																							<Typography variant='caption' color='text.secondary'>
+																								{formatTime(new Date(post.created_at))}
 																							</Typography>
 																						</Box>
+																					</>
+																				) : (
+																					<Box display='flex' gap={2} mt={1} alignItems='center'>
+																						<Typography variant='caption' color='text.secondary'>
+																							{formatTime(new Date(post.created_at))}
+																						</Typography>
 																						<Box display='flex' alignItems='center' gap={0.5} sx={{color: "#f28b82"}}>
 																							<ThumbUpOffAltIcon fontSize='small' />
 																							<Typography variant='caption'>{post.like_count}</Typography>
@@ -329,49 +361,30 @@ const MyPosts = () => {
 																							<Typography variant='caption'>{post.comment_count}</Typography>
 																						</Box>
 																					</Box>
-																					<Box>
-																						<Typography variant='caption' color='text.secondary'>
-																							{formatTime(new Date(post.created_at))}
-																						</Typography>
-																					</Box>
-																				</>
-																			) : (
-																				<Box display='flex' gap={2} mt={1} alignItems='center'>
-																					<Typography variant='caption' color='text.secondary'>
-																						{formatTime(new Date(post.created_at))}
-																					</Typography>
-																					<Box display='flex' alignItems='center' gap={0.5} sx={{color: "#f28b82"}}>
-																						<ThumbUpOffAltIcon fontSize='small' />
-																						<Typography variant='caption'>{post.like_count}</Typography>
-																					</Box>
-																					<Box display='flex' alignItems='center' gap={0.5} sx={{color: "#64b5f6"}}>
-																						<ChatIcon fontSize='small' />
-																						<Typography variant='caption'>{post.comment_count}</Typography>
-																					</Box>
-																				</Box>
-																			)}
-																		</>
-																	}
-																/>
-																{post.image && (
-																	<Box
-																		component='img'
-																		src={post.image}
-																		alt='post thumbnail'
-																		sx={{
-																			width: 80,
-																			height: 60,
-																			objectFit: "cover",
-																			borderRadius: "8px",
-																			marginLeft: 1,
-																		}}
+																				)}
+																			</>
+																		}
 																	/>
-																)}
-															</Box>
-														</ListItemButton>
-													</Box>
-												</Paper>
-											))}
+																	{thumbnailUrl && (
+																		<Box
+																			component='img'
+																			src={thumbnailUrl}
+																			alt='post thumbnail'
+																			sx={{
+																				width: 80,
+																				height: 60,
+																				objectFit: "cover",
+																				borderRadius: "8px",
+																				marginLeft: 1,
+																			}}
+																		/>
+																	)}
+																</Box>
+															</ListItemButton>
+														</Box>
+													</Paper>
+												);
+											})}
 											{loadingMore && (
 												<Box textAlign='center' py={2}>
 													<CircularProgress color='success' />
