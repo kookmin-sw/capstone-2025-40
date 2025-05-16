@@ -41,6 +41,9 @@ const FCMSetup = () => {
 
 			// 앱 실행 중 (포그라운드 수신 시)
 			onMessage(messaging, (payload) => {
+				// 백그라운드 상태면 중복으로 시스템 알림이 이미 표시되었을 수 있으므로 무시
+				if (document.visibilityState !== "visible") return;
+
 				console.log("포그라운드 메시지 수신:", payload);
 				setSnackbarMsg(payload.notification?.body || "알림이 도착했습니다.");
 				setSnackbarOpen(true);
