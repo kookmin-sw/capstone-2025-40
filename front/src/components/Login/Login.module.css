@@ -1,0 +1,114 @@
+.container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+	height: 100vh;
+	background-color: #e8f5e9;
+	padding: 16px;
+	text-align: center;
+}
+
+/* TextField가 너무 커지지 않도록 max-width 설정 */
+.textField {
+	max-width: 400px;
+	width: 100%;
+}
+
+/* GreenDay 스타일 버튼 */
+.loginButton {
+	max-width: 400px !important;
+	background: linear-gradient(135deg, #4caf50, #66bb6a) !important;
+	color: white !important;
+	font-size: 18px !important;
+	font-weight: bold !important;
+	padding: 12px 24px !important;
+	border: none !important;
+	border-radius: 8px !important;
+	cursor: pointer !important;
+	transition: all 0.3s ease-in-out !important;
+	margin: 16px 0px 16px 0px !important;
+	box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* 체크박스 클릭 시 배경색 변경 */
+.container[data-active="true"] {
+	background-color: #d4f8c4;
+}
+
+/* 자동 로그인 체크박스 스타일 */
+.autoLogin {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	margin-top: 10px;
+	color: #333;
+	font-size: 14px;
+	font-weight: bold;
+}
+
+.loginButton:hover {
+	background: linear-gradient(135deg, #388e3c, #43a047) !important;
+}
+
+.loginButton:active {
+	transform: scale(0.96) !important;
+}
+
+/* 회원가입 이동 텍스트 */
+.signupText {
+	margin-top: 16px;
+	color: #388e3c;
+	cursor: pointer;
+	font-size: 16px;
+	font-weight: bold;
+	text-decoration: none;
+}
+
+.signupText:hover {
+	text-decoration: underline;
+}
+
+/* 체크박스 활성화 시 회원가입 버튼 색상 변경 */
+.container[data-active="true"] .signupText {
+	color: #228b22;
+}
+
+.findBox {
+	display: flex;
+	justify-content: center;
+	gap: 8px;
+	margin-bottom: 12px;
+	font-size: 14px;
+}
+
+.findText {
+	color: #388e3c;
+	cursor: pointer;
+	font-weight: 500;
+}
+
+.findText:hover {
+	text-decoration: underline;
+}
+
+.findTextDivider {
+	color: #999;
+}
+
+/* 반응형 조정 */
+@media (max-width: 768px) {
+	.textField {
+		max-width: 90%;
+	}
+
+	.loginButton {
+		max-width: 90% !important;
+		/* font-size: 16px !important; */
+		padding: 10px 20px !important;
+	}
+
+	/* .signupText {
+		font-size: 14px;
+	} */
+}

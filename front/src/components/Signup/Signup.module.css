@@ -1,0 +1,87 @@
+.container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+	height: 100vh;
+	background-color: #e8f5e9;
+	padding: 16px;
+	text-align: center;
+}
+
+/* GreenDay 스타일 버튼 */
+.signupButton {
+	max-width: 400px !important;
+	background: linear-gradient(135deg, #4caf50, #66bb6a) !important;
+	color: white !important;
+	font-size: 18px !important;
+	font-weight: bold !important;
+	padding: 12px 24px !important;
+	border: none !important;
+	border-radius: 8px !important;
+	cursor: pointer !important;
+	transition: all 0.3s ease-in-out !important;
+	margin: 16px 0px 16px 0px !important;
+	box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* TextField가 너무 커지지 않도록 max-width 설정 */
+.textField {
+	max-width: 400px;
+	width: 100%;
+}
+
+.signupButton:hover {
+	background: linear-gradient(135deg, #388e3c, #43a047);
+}
+
+.signupButton:active {
+	transform: scale(0.96);
+}
+
+.locationContainer {
+	display: flex;
+	gap: 16px;
+	width: 100%;
+	max-width: 400px;
+}
+
+/* 개별 필드 스타일 */
+.locationField {
+	flex: 1;
+}
+
+/* 로그인 이동 텍스트 */
+.loginText {
+	margin-top: 16px;
+	color: #388e3c;
+	cursor: pointer;
+	font-size: 16px;
+	font-weight: bold;
+	text-decoration: none;
+}
+
+.loginText:hover {
+	text-decoration: underline;
+}
+
+/* 반응형 조정 */
+@media (max-width: 768px) {
+	.textField {
+		max-width: 90%;
+	}
+
+	.signupButton {
+		max-width: 90% !important;
+		/* font-size: 16px !important; */
+		padding: 10px 20px !important;
+	}
+
+	.locationContainer {
+		max-width: 90%;
+	}
+
+	/* .loginText {
+		font-size: 14px !important;
+	} */
+}

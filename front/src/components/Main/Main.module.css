@@ -1,0 +1,53 @@
+.container {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	background-color: #f1f8e9; /* 연한 그린톤 배경 */
+}
+
+.appBar {
+	background: #88d38b !important;
+	color: white !important;
+	box-shadow: none !important;
+	border: none !important;
+}
+
+.title {
+	font-weight: bold !important;
+	text-align: center;
+}
+
+.body {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	padding: 20px;
+	text-align: center;
+	overflow-y: auto;
+}
+
+.content {
+	font-size: 20px;
+	color: #388e3c;
+}
+
+.bottomNavContainer {
+	/* position: fixed; */
+	bottom: 0;
+	width: 100%;
+	height: 9%;
+}
+
+.bottomNav {
+	background-color: #e8f5e9 !important;
+}
+
+/* 선택된 탭의 텍스트와 아이콘 색상 */
+.Mui-selected {
+	color: #388e3c !important; /* 진한 녹색 강조 */
+}
+
+/* 기본 아이콘/텍스트 색상 */
+.MuiBottomNavigationAction-root {
+	color: #4caf50 !important;
+}

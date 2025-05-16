@@ -1,0 +1,32 @@
+# dependencies
+/node_modules/
+
+# build output
+/build/
+*.log
+
+# environment variables
+.env
+.env.*.local
+
+# macOS system files
+.DS_Store
+
+# Firebase
+.firebase/
+serviceAccountKey.json
+
+# VS Code
+.vscode/
+
+# Test coverage
+coverage/
+
+# Optional npm cache
+.npm
+
+# Others
+*.local
+
+# settings.js file
+/src/settings.js
