@@ -12,7 +12,8 @@ class Command(BaseCommand):
     help = 'Assigns 5 daily quests to each user, excluding quests cleared yesterday.'
 
     def handle(self, *args, **options):
-        today = timezone.now().date()
+        now_local = timezone.localtime(timezone.now())  # UTC → settings.TIME_ZONE 으로 변환
+        today = now_local.date()
         yesterday = today - timedelta(days=1)
         users = User.objects.all()
 
