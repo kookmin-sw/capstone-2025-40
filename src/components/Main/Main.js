@@ -418,6 +418,20 @@ const Main = () => {
 							/>
 						</Paper>
 					))}
+					{["일회용품 줄이기 챌린지 🌏"].map((title, index) => (
+						<Paper key={index} sx={{p: 2, mb: 2, borderRadius: "12px"}}>
+							<FormControlLabel
+								control={
+									<Checkbox
+										color='success'
+										checked={!!deleteChecked[index]}
+										onChange={(e) => setDeleteChecked((prev) => ({...prev, [index]: e.target.checked}))}
+									/>
+								}
+								label={title}
+							/>
+						</Paper>
+					))}
 				</DialogContent>
 				<DialogActions>
 					<Button
