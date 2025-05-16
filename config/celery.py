@@ -23,3 +23,10 @@ app.conf.beat_schedule = {
         'schedule': crontab(hour=18, minute=0),
     },
 }
+
+app.conf.beat_schedule.update({
+    'noon-lunch-notification': {
+        'task': 'AccountsAPP.tasks.send_noon_lunch_notification',
+        'schedule': crontab(hour=12, minute=0),
+    },
+})
