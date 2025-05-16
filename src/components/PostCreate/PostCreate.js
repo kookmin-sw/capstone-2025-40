@@ -120,7 +120,7 @@ const PostCreate = () => {
 			for (let i = 0; i < images.length; i++) {
 				const file = images[i].file;
 				if (file) {
-					const fileName = `post-${postId ?? "new"}-image-${i + 1}`;
+					const fileName = `post-${postId ?? `temp-${Date.now()}`}-image-${i + 1}`;
 					const fileRef = ref(storage, `community-images/${fileName}`);
 					const imageUrl = await uploadImage(file, fileRef);
 					uploadedImages.push({image_url: imageUrl});
@@ -132,7 +132,13 @@ const PostCreate = () => {
 			const postData = {
 				title,
 				content,
-				post_type: isCampaign ? "campaign" : state?.noticeBoard === "정보 게시판" ? "info" : "free",
+				post_type: isEditMode
+					? state.post.post_type
+					: isCampaign
+					? "campaign"
+					: state?.noticeBoard === "정보 게시판"
+					? "info"
+					: "free",
 				images: uploadedImages,
 			};
 
