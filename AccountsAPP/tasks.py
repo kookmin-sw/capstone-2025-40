@@ -44,4 +44,18 @@ def send_evening_remaining_quests():
             data={'click_action': '/quests/today'}
         )
 
+@shared_task
+def send_noon_lunch_notification():
+    """
+    매일 정오 12시에 모든 활성 사용자에게
+    '맛있는 점심 드세요!' 알림을 보냅니다.
+    """
+    for user in User.objects.filter(is_active=True):
+        send_push_to_user(
+            user,
+            title='🍴 점심 시간입니다!',
+            body='맛있는 점심 드세요! 😊',
+            data={'click_action': '/'}   # 원하는 URL 경로로 바꿔도 됩니다
+        )
+
 
