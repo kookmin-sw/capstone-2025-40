@@ -243,42 +243,51 @@ const Home = () => {
 			input.type = "file";
 			input.accept = "image/*";
 			// input.capture = "environment";
-			input.onchange = async () => {
-				if (input.files && input.files.length > 0) {
-					try {
+			input.onchange = () => {
+				setTimeout(async () => {
+					if (input.files && input.files.length > 0) {
 						const file = input.files[0];
-						setAiImage(URL.createObjectURL(file));
-						setShowAiModal(true);
-						setAiStatus("loading");
+						if (!file || file.size === 0) {
+							alert("사진 파일을 불러오지 못했습니다.");
+							setLoadingChallengeId(null);
+							return;
+						}
 
-						const startTime = Date.now();
-						const fileName = `quest-photos/${Date.now()}_${file.name}`;
-						const photoUrl = await uploadImage(file, fileName); // Firebase 업로드
-						await completeQuest(photoUrl); // 서버에 photo_url 전달
-						const elapsed = Date.now() - startTime;
-						const remaining = 5000 - elapsed;
+						try {
+							setAiImage(URL.createObjectURL(file));
+							setShowAiModal(true);
+							setAiStatus("loading");
 
-						setAiStatus("success");
-						setTimeout(
-							() => {
-								setShowAiModal(false);
-								setAiStatus("loading");
-								setAiImage(null);
-							},
-							remaining > 0 ? remaining : 0
-						);
-					} catch (err) {
-						alert("이미지 업로드에 실패했습니다.");
-						console.error(err);
-						setShowAiModal(false);
-						setAiStatus("loading");
-						setAiImage(null);
-					} finally {
+							const startTime = Date.now();
+							const fileName = `quest-photos/${Date.now()}_${file.name}`;
+							const photoUrl = await uploadImage(file, fileName);
+							await completeQuest(photoUrl);
+
+							const elapsed = Date.now() - startTime;
+							const remaining = 5000 - elapsed;
+
+							setAiStatus("success");
+							setTimeout(
+								() => {
+									setShowAiModal(false);
+									setAiStatus("loading");
+									setAiImage(null);
+								},
+								remaining > 0 ? remaining : 0
+							);
+						} catch (err) {
+							alert("이미지 업로드에 실패했습니다.");
+							console.error(err);
+							setShowAiModal(false);
+							setAiStatus("loading");
+							setAiImage(null);
+						} finally {
+							setLoadingChallengeId(null);
+						}
+					} else {
 						setLoadingChallengeId(null);
 					}
-				} else {
-					setLoadingChallengeId(null);
-				}
+				}, 0);
 			};
 			input.oncancel = () => {
 				setLoadingChallengeId(null);
