@@ -3,10 +3,12 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
 from .models import UserQuestAssignment, UserQuestResult, CustomUser, CommunityPost, Campaign, Comment, PostImage, \
-    Report, CampaignParticipant, FCMDevice
+    Report, CampaignParticipant, FCMDevice, CustomChallenge, CustomChallengeQuest, CustomChallengeParticipant, \
+    CustomChallengeQuestAssignment
 from django.contrib.auth.hashers import make_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
+from django.db.models import Count, Q
 
 
 ######################################################### PWA 알림
@@ -89,6 +91,87 @@ class UserQuestResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserQuestResult
         fields = ['photo_url']
+
+
+#================================================================= 커스텀 챌린지
+
+class CustomChallengeCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomChallenge
+        fields = ['title', 'description', 'start_date', 'end_date', 'badge_image']
+
+
+class CustomChallengeQuestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomChallengeQuest
+        fields = ['title', 'description', 'use_camera', 'point']
+
+
+class ParticipantSerializer(serializers.ModelSerializer):
+    nickname = serializers.CharField(source='user.nickname')
+    is_me = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CustomChallengeParticipant
+        fields = ['id', 'nickname', 'is_me']
+
+    def get_is_me(self, obj):
+        request = self.context.get('request')
+        return request and request.user.is_authenticated and obj.user == request.user
+
+
+class QuestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomChallengeQuest
+        fields = ['id', 'title', 'description', 'use_camera', 'point']
+
+
+class AssignmentSerializer(serializers.ModelSerializer):
+    quest = QuestSerializer()
+    class Meta:
+        model = CustomChallengeQuestAssignment
+        fields = ['quest', 'is_completed', 'assigned_date']
+
+
+class CustomChallengeDetailSerializer(serializers.ModelSerializer):
+    assignments = serializers.SerializerMethodField()
+    participants = serializers.SerializerMethodField()
+    total_assignment_count = serializers.SerializerMethodField()
+    completed_assignment_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CustomChallenge
+        fields = [
+            'id', 'title', 'invite_code', 'description', 'start_date', 'end_date', 'badge_image',
+            'assignments', 'leader', 'participants', 'total_assignment_count', 'completed_assignment_count'
+        ]
+
+    def get_assignments(self, obj):
+        # 나(request.user)에게 배정된 assignment만 보여줌
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return []
+        participant = CustomChallengeParticipant.objects.filter(challenge=obj, user=request.user).first()
+        if not participant:
+            return []
+        assignments = CustomChallengeQuestAssignment.objects.filter(participant=participant)
+        return AssignmentSerializer(assignments, many=True).data
+
+    def get_participants(self, obj):
+        participants = CustomChallengeParticipant.objects.filter(challenge=obj).select_related('user')
+        return ParticipantSerializer(participants, many=True, context=self.context).data
+
+    def get_total_assignment_count(self, obj):
+        # 전체 참가자 × 전체 퀘스트 = 전체 배정 Assignment 수
+        return obj.participants.count() * obj.quests.count()
+
+    def get_completed_assignment_count(self, obj):
+        return CustomChallengeQuestAssignment.objects.filter(
+            participant__challenge=obj,
+            is_completed=True
+        ).count()
+
+#==============================================================================
 
 
 class UserRankingSerializer(serializers.ModelSerializer):
