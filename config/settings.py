@@ -141,7 +141,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'AccountsAPP',
-    'QuestAPP',
+    'django_extensions'
 ]
 
 MIDDLEWARE = [
