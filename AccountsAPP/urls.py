@@ -5,7 +5,9 @@ from .views import UserSignupView, UsernameLoginView, TodayAssignedQuestsView, U
     CommentLikeToggleView, ReportCreateView, CampaignParticipantToggleView, PostScrapToggleView, \
     PostLikeToggleView, ScrappedPostListView, JoinedCampaignPostListView, UserProfileView, MyPageView, \
     PasswordResetCodeRequestAPIView, PasswordResetWithCodeAPIView, FindUsernameAPIView, GlobalRankingListView, \
-    LocalRankingListView, MonthlySuccessDaysAPIView, FCMDeviceManageView
+    LocalRankingListView, MonthlySuccessDaysAPIView, FCMDeviceManageView, CustomChallengeCreateView, \
+    MyCustomChallengeListView, CustomChallengeJoinView, CustomChallengeLeaveView, CustomChallengeDetailView, \
+    CustomChallengeCloseView, CustomChallengeQuestCompleteView, MyEndedCustomChallengeListView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
@@ -42,4 +44,13 @@ urlpatterns = [
 
     # 토큰 등록/갱신 (POST) 삭제 (DELETE)
     path('fcm/devices/', FCMDeviceManageView.as_view(), name='fcm_device_manage'),
+
+    path('custom-challenge/', CustomChallengeCreateView.as_view(), name='custome-challenge-create'),
+    path('custom-challenge/my/', MyCustomChallengeListView.as_view(), name='custom-challenge-my-list'),
+    path('custom-challenge/my-ended/', MyEndedCustomChallengeListView.as_view(), name='custom-challenge-my-ended'),
+    path('custom-challenge/join/', CustomChallengeJoinView.as_view(), name='custom-challenge-join'),
+    path('custom-challenge/<int:challenge_id>/leave/', CustomChallengeLeaveView.as_view(), name='custom-challenge-leave'),
+    path('custom-challenge/<int:challenge_id>/close/', CustomChallengeCloseView.as_view(), name='custom-challenge-close'),
+    path('custom-challenge/<int:challenge_id>/', CustomChallengeDetailView.as_view(), name='custom-challenge-detail'),
+    path('custom-challenge/<int:challenge_id>/quests/<int:quest_id>/complete/', CustomChallengeQuestCompleteView.as_view(), name='custom-challenge-quest-complete'),
 ]

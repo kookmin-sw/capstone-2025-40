@@ -1,5 +1,6 @@
 from datetime import timedelta
-
+import random
+import string
 from django.conf import settings
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
@@ -18,7 +19,7 @@ class CustomUser(AbstractUser):
     nickname = models.CharField(max_length=50, blank=True, null=True)
     profile_image = models.URLField(blank=True, null=True)
     badge_image = models.URLField(blank=True, null=True)
-    points = models.IntegerField(blank=True, null=True)
+    points = models.IntegerField(blank=True, null=True, default = 0)
     name = models.CharField(max_length=30, blank=True, null=True)  # 사용자 이름
     city = models.CharField(max_length=50, blank=True, null=True)  # 예: 서울시
     district = models.CharField(max_length=50, blank=True, null=True)  # 예: 마포구
@@ -32,6 +33,7 @@ class Quest(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     useCamera = models.BooleanField(default=False)
+    point = models.IntegerField(default=5)
 
 
 # 사용자 퀘스트 인증
@@ -49,6 +51,83 @@ class UserQuestResult(models.Model):
     assignment = models.OneToOneField(UserQuestAssignment, on_delete=models.CASCADE)
     photo_url = models.URLField(blank=True, null=True)
     completed_at = models.DateTimeField(auto_now_add=True)
+
+
+################################################################  커스텀 챌린지
+def generate_invite_code():
+    # 8자리 영문+숫자 랜덤 (예: '7F3Q1X2B')
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+
+class CustomChallenge(models.Model):
+    id = models.AutoField(primary_key=True)
+    invite_code = models.CharField(
+        max_length=12,
+        default=generate_invite_code,  # 위에서 정의한 랜덤 생성 함수
+        unique=True,
+        db_index=True
+    )
+    title = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    badge_image = models.URLField(blank=True, null=True)
+    leader = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='led_challenges'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} ({self.invite_code})"
+
+
+class CustomChallengeQuest(models.Model):
+    challenge = models.ForeignKey(CustomChallenge, on_delete=models.CASCADE, related_name='quests')
+    title = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    use_camera = models.BooleanField(default=False)
+    point = models.IntegerField(default=3)
+
+    def __str__(self):
+        return f"{self.title} [{self.challenge.title}]"
+
+
+class CustomChallengeParticipant(models.Model):
+    challenge = models.ForeignKey(CustomChallenge, on_delete=models.CASCADE, related_name='participants')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('challenge', 'user')
+
+    def __str__(self):
+        return f"{self.user.username} in {self.challenge.title}"
+
+
+class CustomChallengeQuestAssignment(models.Model):
+    participant = models.ForeignKey(CustomChallengeParticipant, on_delete=models.CASCADE, related_name='assignments')
+    quest = models.ForeignKey(CustomChallengeQuest, on_delete=models.CASCADE)
+    assigned_date = models.DateField(auto_now_add=True)
+    is_completed = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('participant', 'quest')
+
+    def __str__(self):
+        return f"Assignment: {self.participant.user.username} - {self.quest.title}"
+
+
+class CustomChallengeQuestResult(models.Model):
+    assignment = models.OneToOneField(CustomChallengeQuestAssignment, on_delete=models.CASCADE, related_name='result')
+    photo_url = models.URLField(blank=True, null=True)
+    completed_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Result for {self.assignment}"
+
+
+#####################################################################################
 
 
 class Tip(models.Model):

@@ -3,12 +3,13 @@ from calendar import monthrange
 from collections import defaultdict
 from datetime import date, timedelta
 from django.core.mail import send_mail
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from django.db.models import F, Prefetch, Window, Q, Count, Exists, OuterRef, Case, When, Value, BooleanField
 from django.db.models.functions import Rank
 from django.http import JsonResponse
-from django.utils.timezone import now
+from django.utils import timezone
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, permissions, status
@@ -20,13 +21,15 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError, PermissionDenied
 from .models import UserQuestAssignment, UserQuestResult, Tip, CommunityPost, Campaign, Comment, PostImage, CommentLike, \
-    Report, CampaignParticipant, PostScrap, PostLike, PasswordResetCode, FCMDevice
+    Report, CampaignParticipant, PostScrap, PostLike, PasswordResetCode, FCMDevice, CustomChallengeQuest, \
+    CustomChallenge, CustomChallengeParticipant, CustomChallengeQuestAssignment, CustomChallengeQuestResult
 from .pagination import RankingPagination
 from .serializers import UserSignupSerializer, UsernameLoginSerializer, UserQuestAssignmentSerializer, \
     UserQuestResultSerializer, CommunityPostListSerializer, CommunityPostDetailSerializer, CommentSerializer, \
-    CommunityPostSerializer, CampaignSerializer, CommentDetailSerializer, ReportSerializer, CampaignParticipantSerializer, UserProfileSerializer, \
+    CommunityPostSerializer, CampaignSerializer, CommentDetailSerializer, ReportSerializer, \
+    CampaignParticipantSerializer, UserProfileSerializer, \
     FindUsernameSerializer, PasswordResetCodeRequestSerializer, PasswordResetWithCodeSerializer, UserRankingSerializer, \
-    FCMDeviceSerializer
+    FCMDeviceSerializer, CustomChallengeCreateSerializer, CustomChallengeDetailSerializer
 from .utils.notifications import send_push_to_user
 
 User = get_user_model()
@@ -198,7 +201,7 @@ class TodayAssignedQuestsView(generics.ListAPIView):
 
 
 
-# 퀘스트 인증 (사진 등록)
+# 퀘스트 인증 (+사진 등록)
 class UserQuestResultCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -247,7 +250,236 @@ class UserQuestResultCreateView(APIView):
             data={'click_action': f'/quests/{assignment.id}/result'}
         )
 
+        user = request.user
+        quest_point = getattr(assignment.quest, "point", 5)  # point 필드 없으면 5로 fallback
+        user.points = (user.points or 0) + quest_point
+        user.save(update_fields=["points"])
+
         return Response({'message': '퀘스트 인증 완료!'}, status=status.HTTP_201_CREATED)
+
+
+# =================================================================================
+
+class CustomChallengeCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request):
+        quests_data = request.data.pop('quests', [])
+        serializer = CustomChallengeCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            challenge = serializer.save(leader=request.user)
+            # 퀘스트 생성
+            for quest_data in quests_data:
+                CustomChallengeQuest.objects.create(challenge=challenge, **quest_data)
+
+            # 1. 리더를 참가자로 등록
+            participant = CustomChallengeParticipant.objects.create(
+                challenge=challenge, user=request.user
+            )
+
+            # 2. 모든 미션(퀘스트) 배정
+            quests = CustomChallengeQuest.objects.filter(challenge=challenge)
+            for quest in quests:
+                CustomChallengeQuestAssignment.objects.create(
+                    participant=participant,
+                    quest=quest
+                )
+
+            return Response({'id': challenge.id, 'invite_code': challenge.invite_code}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class MyCustomChallengeListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        today = timezone.now().date()
+        challenges = CustomChallenge.objects.filter(
+            (Q(leader=user) | Q(participants__user=user)) & Q(end_date__gte=today)
+        ).distinct()
+        serializer = CustomChallengeDetailSerializer(challenges, many=True, context={'request': request})
+        return Response(serializer.data)
+
+
+class MyEndedCustomChallengeListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        today = timezone.now().date()
+        challenges = CustomChallenge.objects.filter(
+            (Q(leader=user) | Q(participants__user=user)) & Q(end_date__lt=today)
+        ).distinct()
+        serializer = CustomChallengeDetailSerializer(challenges, many=True, context={'request': request})
+        return Response(serializer.data)
+
+
+class CustomChallengeQuestCompleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, challenge_id, quest_id):
+        user = request.user
+        challenge = get_object_or_404(CustomChallenge, pk=challenge_id)
+        today = timezone.now().date()
+
+        if challenge.end_date < today:
+            print(challenge.end_date)
+            print(today)
+            return Response({'detail': '종료된 챌린지입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 참가자인지 체크
+        participant = CustomChallengeParticipant.objects.filter(challenge=challenge, user=user).first()
+        if not participant:
+            return Response({'detail': '참가자가 아닙니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+        quest = get_object_or_404(CustomChallengeQuest, pk=quest_id, challenge=challenge)
+
+        # Assignment 가져오기
+        assignment = CustomChallengeQuestAssignment.objects.filter(participant=participant, quest=quest).first()
+        if not assignment:
+            return Response({'detail': '이 미션이 배정되지 않았습니다.'}, status=status.HTTP_404_NOT_FOUND)
+        if assignment.is_completed:
+            return Response({'detail': '이미 완료한 미션입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # use_camera 체크
+        photo_url = request.data.get('photo_url')
+        if quest.use_camera and not photo_url:
+            return Response({'detail': '사진 인증이 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 결과 기록
+        assignment.is_completed = True
+        assignment.save()
+        CustomChallengeQuestResult.objects.create(
+            assignment=assignment,
+            photo_url=photo_url if quest.use_camera else None
+        )
+
+        user.points = (user.points or 0) + quest.point
+        user.save(update_fields=['points'])
+
+        return Response({'detail': '미션 인증 완료!'}, status=status.HTTP_201_CREATED)
+
+
+class CustomChallengeJoinView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        invite_code = request.data.get('invite_code')
+        if not invite_code:
+            return Response({'detail': '초대코드를 입력하세요.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        challenge = get_object_or_404(CustomChallenge, invite_code=invite_code)
+        user = request.user
+
+        # 이미 참가 중인지 체크
+        if CustomChallengeParticipant.objects.filter(challenge=challenge, user=user).exists():
+            return Response({'detail': '이미 참가한 챌린지입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 참가자 생성
+        participant = CustomChallengeParticipant.objects.create(challenge=challenge, user=user)
+
+        # 퀘스트 Assignment 모두 배정
+        quests = CustomChallengeQuest.objects.filter(challenge=challenge)
+        for quest in quests:
+            CustomChallengeQuestAssignment.objects.create(participant=participant, quest=quest)
+
+        return Response({
+            'joined': True,
+            'challenge_id': challenge.id,
+            'challenge_title': challenge.title
+        }, status=status.HTTP_201_CREATED)
+
+
+class CustomChallengeLeaveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, challenge_id):
+        user = request.user
+        challenge = get_object_or_404(CustomChallenge, pk=challenge_id)
+
+        participant = CustomChallengeParticipant.objects.filter(
+            challenge=challenge, user=user
+        ).first()
+        if not participant:
+            return Response({'detail': '참가자가 아닙니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        participant.delete()
+        return Response({'detail': '챌린지에서 탈퇴되었습니다.'}, status=status.HTTP_204_NO_CONTENT)
+
+
+class CustomChallengeDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, challenge_id):
+        user = request.user
+        challenge = get_object_or_404(CustomChallenge, pk=challenge_id)
+        if challenge.leader != user:
+            return Response({'detail': '챌린지 리더만 수정할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+        # 1. 챌린지 필드 수정 (title, description 등)
+        serializer = CustomChallengeCreateSerializer(challenge, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+
+            # 2. quests가 있으면 퀘스트 수정 처리
+            quests_data = request.data.get('quests')
+            if quests_data is not None:
+                existing_quests = {q.id: q for q in challenge.quests.all()}
+
+                sent_ids = set()
+                for quest_data in quests_data:
+                    quest_id = quest_data.get('id')
+                    if quest_id and quest_id in existing_quests:
+                        # 기존 퀘스트 수정
+                        quest = existing_quests[quest_id]
+                        for field in ['title', 'description', 'use_camera', 'point']:
+                            if field in quest_data:
+                                setattr(quest, field, quest_data[field])
+                        quest.save()
+                        sent_ids.add(quest_id)
+                    else:
+                        # 새 퀘스트 생성
+                        CustomChallengeQuest.objects.create(challenge=challenge, **quest_data)
+
+                # 요청에 없는 기존 퀘스트는 삭제
+                to_delete = [q for qid, q in existing_quests.items() if qid not in sent_ids]
+                for quest in to_delete:
+                    quest.delete()
+
+            return Response({'detail': '챌린지 정보가 수정되었습니다.'}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, challenge_id):
+        user = request.user
+        challenge = get_object_or_404(CustomChallenge, pk=challenge_id)
+
+        if challenge.leader != user:
+            return Response({'detail': '챌린지 리더만 삭제할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+        challenge.delete()
+        return Response({'detail': '챌린지가 삭제되었습니다.'}, status=status.HTTP_204_NO_CONTENT)
+
+
+class CustomChallengeCloseView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, challenge_id):
+        challenge = get_object_or_404(CustomChallenge, pk=challenge_id)
+        if challenge.leader != request.user:
+            return Response({'detail': '챌린지 리더만 종료할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+        today = timezone.now().date()
+        if challenge.end_date <= today:
+            return Response({'detail': '이미 종료된 챌린지입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        challenge.end_date = today
+        challenge.save(update_fields=['end_date'])
+
+        return Response({'detail': '챌린지가 조기 종료되었습니다.'}, status=status.HTTP_200_OK)
+
+# =================================================================================
 
 
 class TodayQuestSummaryView(APIView):
