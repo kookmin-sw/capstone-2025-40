@@ -213,22 +213,22 @@ class UserQuestResultCreateView(APIView):
                 user=request.user
             )
         except UserQuestAssignment.DoesNotExist:
-            return Response({'error': '퀘스트를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': '퀘스트를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
         # 이미 인증했는지 확인
         if assignment.is_completed:
-            return Response({'error': '이미 인증된 퀘스트입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': '이미 인증된 퀘스트입니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
         # 오늘 인증만 허용
         if assignment.assigned_date != date.today():
-            return Response({'error': '인증 기한이 지났습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': '인증 기한이 지났습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
         # ✅ useCamera 여부에 따라 사진 필수 여부 판단
         use_camera = assignment.quest.useCamera
         photo_url = request.data.get('photo_url')
 
         if use_camera and not photo_url:
-            return Response({'error': '사진이 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail' : '사진이 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
         # AI 인증 분기
         if use_camera and photo_url:
@@ -253,14 +253,15 @@ class UserQuestResultCreateView(APIView):
                     body=f'"{assignment.quest.title}" 퀘스트 인증이 완료되었습니다.',
                     data={'click_action': f'/quests/{assignment.id}/result'}
                 )
-                return Response({'message': '퀘스트 인증 완료!', 'success': True}, status=status.HTTP_201_CREATED)
+                return Response({'detail': '퀘스트 인증 완료!', 'result': True}, status=status.HTTP_201_CREATED)
 
             elif is_passed is False:
                 # === 사진은 있지만 미션 불일치 ===
                 return Response(
                     {
-                        "error": "AI 인증에 실패했습니다. 미션에 맞는 사진을 올려주세요.",
-                        "reason": error_msg,  # 여기서 구체적 사유 반환
+                        "detail": "AI 인증에 실패했습니다. 미션에 맞는 사진을 올려주세요.",
+                        'result' : False,
+                        "reason": error_msg,  # 여기서 구체적 사유 반환,
                         "code": "AI_FAIL"
                     },
                     status=status.HTTP_400_BAD_REQUEST
@@ -269,7 +270,7 @@ class UserQuestResultCreateView(APIView):
             else:
                 # === 시스템(네트워크/API 등) 에러 ===
                 return Response(
-                    {'error': 'AI 판별 시스템 오류: 관리자에게 문의해주세요.', 'code': 'AI_SYSTEM_ERROR', 'detail': error_msg},
+                    {'detail': 'AI 판별 시스템 오류: 관리자에게 문의해주세요.', 'result' : False, 'reason': error_msg, 'code': 'AI_SYSTEM_ERROR', },
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
 
@@ -291,7 +292,7 @@ class UserQuestResultCreateView(APIView):
             body=f'"{assignment.quest.title}" 퀘스트 인증이 완료되었습니다.',
             data={'click_action': f'/quests/{assignment.id}/result'}
         )
-        return Response({'message': '퀘스트 인증 완료!', 'success': True}, status=status.HTTP_201_CREATED)
+        return Response({'detail': '퀘스트 인증 완료!', 'result': True}, status=status.HTTP_201_CREATED)
 
 
 # =================================================================================
@@ -385,7 +386,7 @@ class CustomChallengeQuestCompleteView(APIView):
         # 사진 누락 (필수인데 없음)
         if use_camera and not photo_url:
             return Response(
-                {'error': '사진 인증이 필요합니다.', 'code': 'PHOTO_REQUIRED'},
+                {'detail': '사진 인증이 필요합니다.', 'code': 'PHOTO_REQUIRED'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -402,13 +403,14 @@ class CustomChallengeQuestCompleteView(APIView):
                 )
                 user.points = (user.points or 0) + quest.point
                 user.save(update_fields=['points'])
-                return Response({'detail': '미션 인증 완료!', 'success': True}, status=status.HTTP_201_CREATED)
+                return Response({'detail': '미션 인증 완료!', 'result': True}, status=status.HTTP_201_CREATED)
 
             elif is_passed is False:
                 # 미션에 맞지 않는 사진(유저 문제)
                 return Response(
                     {
-                        "error": "AI 인증에 실패했습니다. 미션에 맞는 사진을 올려주세요.",
+                        "detail": "AI 인증에 실패했습니다. 미션에 맞는 사진을 올려주세요.",
+                        'result': False,
                         "reason": error_msg,  # 여기서 구체적 사유 반환
                         "code": "AI_FAIL"
                     },
@@ -417,7 +419,7 @@ class CustomChallengeQuestCompleteView(APIView):
             else:
                 # 네트워크/시스템 에러 등
                 return Response(
-                    {'error': 'AI 판별 시스템 오류: 관리자에게 문의해주세요.', 'code': 'AI_SYSTEM_ERROR', 'detail': error_msg},
+                    {'detail': 'AI 판별 시스템 오류: 관리자에게 문의해주세요.', 'result': False, 'code': 'AI_SYSTEM_ERROR', 'reason': error_msg},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
 
@@ -431,7 +433,7 @@ class CustomChallengeQuestCompleteView(APIView):
         user.points = (user.points or 0) + quest.point
         user.save(update_fields=['points'])
 
-        return Response({'detail': '미션 인증 완료!', 'success': True}, status=status.HTTP_201_CREATED)
+        return Response({'detail': '미션 인증 완료!', 'result': True}, status=status.HTTP_201_CREATED)
 
 
 class CustomChallengeJoinView(APIView):
