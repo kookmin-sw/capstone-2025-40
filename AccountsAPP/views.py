@@ -258,7 +258,11 @@ class UserQuestResultCreateView(APIView):
             elif is_passed is False:
                 # === 사진은 있지만 미션 불일치 ===
                 return Response(
-                    {'error': 'AI 인증에 실패했습니다. 미션에 맞는 사진을 올려주세요.', 'code': 'AI_FAIL'},
+                    {
+                        "error": "AI 인증에 실패했습니다. 미션에 맞는 사진을 올려주세요.",
+                        "reason": error_msg,  # 여기서 구체적 사유 반환
+                        "code": "AI_FAIL"
+                    },
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -403,7 +407,11 @@ class CustomChallengeQuestCompleteView(APIView):
             elif is_passed is False:
                 # 미션에 맞지 않는 사진(유저 문제)
                 return Response(
-                    {'error': 'AI 인증에 실패했습니다. 미션에 맞는 사진을 올려주세요.', 'code': 'AI_FAIL'},
+                    {
+                        "error": "AI 인증에 실패했습니다. 미션에 맞는 사진을 올려주세요.",
+                        "reason": error_msg,  # 여기서 구체적 사유 반환
+                        "code": "AI_FAIL"
+                    },
                     status=status.HTTP_400_BAD_REQUEST
                 )
             else:
