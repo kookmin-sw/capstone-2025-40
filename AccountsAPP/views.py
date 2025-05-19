@@ -503,6 +503,8 @@ class CustomChallengeDetailView(APIView):
                 existing_quests = {q.id: q for q in challenge.quests.all()}
 
                 sent_ids = set()
+                new_quests = []
+
                 for quest_data in quests_data:
                     quest_id = quest_data.get('id')
                     if quest_id and quest_id in existing_quests:
@@ -515,7 +517,17 @@ class CustomChallengeDetailView(APIView):
                         sent_ids.add(quest_id)
                     else:
                         # 새 퀘스트 생성
-                        CustomChallengeQuest.objects.create(challenge=challenge, **quest_data)
+                        new_quest = CustomChallengeQuest.objects.create(challenge=challenge, **quest_data)
+                        new_quests.append(new_quest)
+
+                # 기존에 없던 퀘스트를 참가자들에게 배정
+                participants = challenge.participants.all()
+                for quest in new_quests:
+                    for participant in participants:
+                        CustomChallengeQuestAssignment.objects.create(
+                            participant=participant,
+                            quest=quest
+                        )
 
                 # 요청에 없는 기존 퀘스트는 삭제
                 to_delete = [q for qid, q in existing_quests.items() if qid not in sent_ids]
