@@ -17,8 +17,8 @@ class FCMDevice(models.Model):
 
 class CustomUser(AbstractUser):
     nickname = models.CharField(max_length=50, blank=True, null=True)
-    profile_image = models.URLField(blank=True, null=True)
-    badge_image = models.URLField(blank=True, null=True)
+    profile_image = models.URLField(max_length=500, blank=True, null=True)
+    badge_image = models.URLField(max_length=500, blank=True, null=True)
     points = models.IntegerField(blank=True, null=True, default = 0)
     name = models.CharField(max_length=30, blank=True, null=True)  # 사용자 이름
     city = models.CharField(max_length=50, blank=True, null=True)  # 예: 서울시
@@ -49,7 +49,7 @@ class UserQuestAssignment(models.Model):
 
 class UserQuestResult(models.Model):
     assignment = models.OneToOneField(UserQuestAssignment, on_delete=models.CASCADE)
-    photo_url = models.URLField(blank=True, null=True)
+    photo_url = models.URLField(max_length=500, blank=True, null=True)
     completed_at = models.DateTimeField(auto_now_add=True)
 
 
@@ -70,7 +70,7 @@ class CustomChallenge(models.Model):
     description = models.TextField(blank=True, null=True)
     start_date = models.DateField()
     end_date = models.DateField()
-    badge_image = models.URLField(blank=True, null=True)
+    badge_image = models.URLField(max_length=500, blank=True, null=True)
     leader = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -120,7 +120,7 @@ class CustomChallengeQuestAssignment(models.Model):
 
 class CustomChallengeQuestResult(models.Model):
     assignment = models.OneToOneField(CustomChallengeQuestAssignment, on_delete=models.CASCADE, related_name='result')
-    photo_url = models.URLField(blank=True, null=True)
+    photo_url = models.URLField(max_length=500, blank=True, null=True)
     completed_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -197,7 +197,7 @@ class Comment(models.Model):
 # 이미지 관리 모델
 class PostImage(models.Model):
     post = models.ForeignKey(CommunityPost, on_delete=models.CASCADE, related_name='images')
-    image_url = models.URLField()
+    image_url = models.URLField(max_length=500)
 
     def __str__(self):
         return f"{self.post.id} – {self.image_url}"
