@@ -18,7 +18,7 @@ from .models import (
     CustomChallengeParticipant,
     CustomChallengeQuest,
     CustomChallengeQuestAssignment,
-    CustomChallengeQuestResult,
+    CustomChallengeQuestResult, UserBadge,
 )
 
 
@@ -154,6 +154,14 @@ class CustomChallengeQuestResultAdmin(admin.ModelAdmin):
     search_fields = ('assignment__participant__user__username',)
     list_filter = ('completed_at',)
 
+
+@admin.register(UserBadge)
+class UserBadgeAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'challenge', 'badge_image', 'awarded_at')
+    search_fields = ('user__username', 'challenge__title')
+    list_filter = ('challenge',)
+    autocomplete_fields = ['user', 'challenge']
+    readonly_fields = ('awarded_at',)
 
 
 admin.site.register(Quest)
