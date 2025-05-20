@@ -22,14 +22,15 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError, PermissionDenied
 from .models import UserQuestAssignment, UserQuestResult, Tip, CommunityPost, Campaign, Comment, PostImage, CommentLike, \
     Report, CampaignParticipant, PostScrap, PostLike, PasswordResetCode, FCMDevice, CustomChallengeQuest, \
-    CustomChallenge, CustomChallengeParticipant, CustomChallengeQuestAssignment, CustomChallengeQuestResult
+    CustomChallenge, CustomChallengeParticipant, CustomChallengeQuestAssignment, CustomChallengeQuestResult, UserBadge
 from .pagination import RankingPagination
 from .serializers import UserSignupSerializer, UsernameLoginSerializer, UserQuestAssignmentSerializer, \
     UserQuestResultSerializer, CommunityPostListSerializer, CommunityPostDetailSerializer, CommentSerializer, \
     CommunityPostSerializer, CampaignSerializer, CommentDetailSerializer, ReportSerializer, \
     CampaignParticipantSerializer, UserProfileSerializer, \
     FindUsernameSerializer, PasswordResetCodeRequestSerializer, PasswordResetWithCodeSerializer, UserRankingSerializer, \
-    FCMDeviceSerializer, CustomChallengeCreateSerializer, CustomChallengeDetailSerializer
+    FCMDeviceSerializer, CustomChallengeCreateSerializer, CustomChallengeDetailSerializer, QuestResultUserSerializer, \
+    UserBadgeSerializer
 from .utils.ai_cert import quest_photo_verification
 from .utils.notifications import send_push_to_user
 
@@ -564,6 +565,19 @@ class CustomChallengeCloseView(APIView):
         challenge.save(update_fields=['end_date'])
 
         return Response({'detail': '챌린지가 조기 종료되었습니다.'}, status=status.HTTP_200_OK)
+
+
+class CustomChallengeQuestResultListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, challenge_id, quest_id):
+        challenge = get_object_or_404(CustomChallenge, pk=challenge_id)
+        quest = get_object_or_404(CustomChallengeQuest, pk=quest_id, challenge=challenge)
+        assignments = CustomChallengeQuestAssignment.objects.filter(
+            quest=quest, is_completed=True
+        ).select_related('participant__user', 'result')
+        serializer = QuestResultUserSerializer(assignments, many=True)
+        return Response(serializer.data)
 
 # =================================================================================
 
@@ -1295,3 +1309,12 @@ class JoinedCampaignPostListView(ListAPIView):
                 Q(content__icontains=search)
             )
         return qs
+
+
+class MyBadgeListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        badges = UserBadge.objects.filter(user=request.user).order_by('-awarded_at')
+        serializer = UserBadgeSerializer(badges, many=True)
+        return Response(serializer.data)

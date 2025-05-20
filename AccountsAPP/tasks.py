@@ -2,9 +2,11 @@
 
 from celery import shared_task
 from django.contrib.auth import get_user_model
-from datetime import date
+from datetime import date, timedelta
+from django.utils import timezone
 from .utils.notifications import send_push_to_user
-from .models import UserQuestAssignment
+from .models import UserQuestAssignment, CustomChallenge, CustomChallengeQuestAssignment, CustomChallengeParticipant, \
+    UserBadge
 
 User = get_user_model()
 
@@ -58,4 +60,45 @@ def send_noon_lunch_notification():
             data={'click_action': '/'}   # 원하는 URL 경로로 바꿔도 됩니다
         )
 
+
+@shared_task
+def award_challenge_badges():
+    yesterday = timezone.now().date() - timedelta(days=1)
+    # 전날 종료된 챌린지들
+    ended_challenges = CustomChallenge.objects.filter(end_date=yesterday)
+
+    for challenge in ended_challenges:
+        if not challenge.badge_image:
+            continue  # 뱃지 없으면 건너뜀
+
+        # 전체 과제수
+        total_assignments = CustomChallengeQuestAssignment.objects.filter(
+            participant__challenge=challenge
+        ).count()
+
+        # 완료 과제수
+        completed_assignments = CustomChallengeQuestAssignment.objects.filter(
+            participant__challenge=challenge,
+            is_completed=True
+        ).count()
+
+        if total_assignments == 0:
+            continue  # 할당이 0개면 계산 생략
+
+        completion_rate = completed_assignments / total_assignments
+
+        if completion_rate >= 0.8:
+            # 퀘스트를 1개라도 수행한(완료한) 참여자
+            qualifying_participants = CustomChallengeParticipant.objects.filter(
+                challenge=challenge,
+                assignments__is_completed=True
+            ).distinct()
+
+            for participant in qualifying_participants:
+                if not UserBadge.objects.filter(user=participant.user, challenge=challenge).exists():
+                    UserBadge.objects.create(
+                        user=participant.user,
+                        challenge=challenge,
+                        badge_image=challenge.badge_image
+                    )
 

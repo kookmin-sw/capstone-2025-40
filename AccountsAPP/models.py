@@ -270,3 +270,12 @@ class PasswordResetCode(models.Model):
         indexes = [
             models.Index(fields=['user', 'code']),
         ]
+
+class UserBadge(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='badges')
+    challenge = models.ForeignKey(CustomChallenge, on_delete=models.CASCADE)
+    badge_image = models.URLField()
+    awarded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'challenge')
