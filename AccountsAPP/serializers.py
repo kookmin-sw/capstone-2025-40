@@ -4,7 +4,7 @@ from rest_framework.validators import UniqueValidator
 
 from .models import UserQuestAssignment, UserQuestResult, CustomUser, CommunityPost, Campaign, Comment, PostImage, \
     Report, CampaignParticipant, FCMDevice, CustomChallenge, CustomChallengeQuest, CustomChallengeParticipant, \
-    CustomChallengeQuestAssignment
+    CustomChallengeQuestAssignment, UserBadge
 from django.contrib.auth.hashers import make_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
