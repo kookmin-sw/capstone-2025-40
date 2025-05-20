@@ -7,7 +7,8 @@ from .views import UserSignupView, UsernameLoginView, TodayAssignedQuestsView, U
     PasswordResetCodeRequestAPIView, PasswordResetWithCodeAPIView, FindUsernameAPIView, GlobalRankingListView, \
     LocalRankingListView, MonthlySuccessDaysAPIView, FCMDeviceManageView, CustomChallengeCreateView, \
     MyCustomChallengeListView, CustomChallengeJoinView, CustomChallengeLeaveView, CustomChallengeDetailView, \
-    CustomChallengeCloseView, CustomChallengeQuestCompleteView, MyEndedCustomChallengeListView
+    CustomChallengeCloseView, CustomChallengeQuestCompleteView, MyEndedCustomChallengeListView, \
+    CustomChallengeQuestResultListView, MyBadgeListView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
@@ -19,6 +20,7 @@ urlpatterns = [
     path('auth/password/reset/confirm-code/', PasswordResetWithCodeAPIView.as_view(), name='password-reset-confirm-code'),
     path('profile/<int:user_id>/', UserProfileView.as_view(), name='user-profile'),
     path('profile/my/', MyPageView.as_view(), name='my-page'),
+    path('profile/my/badges/', MyBadgeListView.as_view(), name='my-badges'),
     path('my-quests/today/', TodayAssignedQuestsView.as_view(), name='today-quests'),
     path('my-quests/<int:assignment_id>/complete/', UserQuestResultCreateView.as_view(), name='quest-complete'),
     path('my-quests/success-days/', MonthlySuccessDaysAPIView.as_view(), name='monthly-success-days'),
@@ -53,4 +55,5 @@ urlpatterns = [
     path('custom-challenge/<int:challenge_id>/close/', CustomChallengeCloseView.as_view(), name='custom-challenge-close'),
     path('custom-challenge/<int:challenge_id>/', CustomChallengeDetailView.as_view(), name='custom-challenge-detail'),
     path('custom-challenge/<int:challenge_id>/quests/<int:quest_id>/complete/', CustomChallengeQuestCompleteView.as_view(), name='custom-challenge-quest-complete'),
+    path('custom-challenge/<int:challenge_id>/quests/<int:quest_id>/results/', CustomChallengeQuestResultListView.as_view(), name='custom-challenge-quest-results')
 ]

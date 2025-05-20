@@ -135,15 +135,17 @@ class AssignmentSerializer(serializers.ModelSerializer):
 
 class CustomChallengeDetailSerializer(serializers.ModelSerializer):
     assignments = serializers.SerializerMethodField()
+    is_leader = serializers.SerializerMethodField()
     participants = serializers.SerializerMethodField()
     total_assignment_count = serializers.SerializerMethodField()
     completed_assignment_count = serializers.SerializerMethodField()
+
 
     class Meta:
         model = CustomChallenge
         fields = [
             'id', 'title', 'invite_code', 'description', 'start_date', 'end_date', 'badge_image',
-            'assignments', 'leader', 'participants', 'total_assignment_count', 'completed_assignment_count'
+            'assignments', 'leader', 'is_leader', 'participants', 'total_assignment_count', 'completed_assignment_count', 'is_leader'
         ]
 
     def get_assignments(self, obj):
@@ -156,6 +158,10 @@ class CustomChallengeDetailSerializer(serializers.ModelSerializer):
             return []
         assignments = CustomChallengeQuestAssignment.objects.filter(participant=participant)
         return AssignmentSerializer(assignments, many=True).data
+
+    def get_is_leader(self, obj):
+        request = self.context.get('request')
+        return request and request.user.is_authenticated and obj.leader_id == request.user.id
 
     def get_participants(self, obj):
         participants = CustomChallengeParticipant.objects.filter(challenge=obj).select_related('user')
@@ -170,6 +176,16 @@ class CustomChallengeDetailSerializer(serializers.ModelSerializer):
             participant__challenge=obj,
             is_completed=True
         ).count()
+
+
+class QuestResultUserSerializer(serializers.ModelSerializer):
+    user = UserProfileSerializer(source='participant.user', read_only=True)
+    completed_at = serializers.DateTimeField(source='result.completed_at', read_only=True)
+    photo_url = serializers.CharField(source='result.photo_url', read_only=True)
+
+    class Meta:
+        model = CustomChallengeQuestAssignment
+        fields = ['id', 'user', 'completed_at', 'photo_url']
 
 #==============================================================================
 
@@ -325,3 +341,9 @@ class CampaignParticipantSerializer(serializers.ModelSerializer):
     class Meta:
         model = CampaignParticipant
         fields = ['user', 'joined_at']
+
+class UserBadgeSerializer(serializers.ModelSerializer):
+    challenge_title = serializers.CharField(source='challenge.title')
+    class Meta:
+        model = UserBadge
+        fields = ['id', 'challenge_title', 'badge_image', 'awarded_at']

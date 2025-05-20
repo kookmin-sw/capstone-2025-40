@@ -22,6 +22,10 @@ app.conf.beat_schedule = {
         'task': 'AccountsAPP.tasks.send_evening_remaining_quests',
         'schedule': crontab(hour=18, minute=0),
     },
+    'award-badges-everyday-1am': {
+        'task': 'your_app_name.tasks.award_challenge_badges',
+        'schedule': crontab(hour=1, minute=0),
+    },
 }
 
 app.conf.beat_schedule.update({
@@ -30,3 +34,5 @@ app.conf.beat_schedule.update({
         'schedule': crontab(hour=12, minute=0),
     },
 })
+
+
