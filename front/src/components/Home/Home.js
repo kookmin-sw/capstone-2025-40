@@ -939,7 +939,15 @@ const Home = ({customChallengeChanged, setCustomChallengeChanged}) => {
 							</Button>
 						</DialogActions>
 					</Dialog>
-					<Dialog open={openDetailModal} onClose={() => setOpenDetailModal(false)} fullWidth maxWidth='sm'>
+					<Dialog
+						open={openDetailModal}
+						onClose={() => {
+							setOpenDetailModal(false);
+							setChallengeResults([]);
+							setSelectedChallenge(null);
+						}}
+						fullWidth
+						maxWidth='sm'>
 						<DialogTitle sx={{color: "#2e7d32", fontWeight: "bold"}}>
 							{selectedChallenge?.text &&
 								(selectedChallenge.text.length > 15
@@ -995,7 +1003,13 @@ const Home = ({customChallengeChanged, setCustomChallengeChanged}) => {
 							))}
 						</DialogContent>
 						<DialogActions>
-							<Button color='success' onClick={() => setOpenDetailModal(false)}>
+							<Button
+								color='success'
+								onClick={() => {
+									setOpenDetailModal(false);
+									setChallengeResults([]);
+									setSelectedChallenge(null);
+								}}>
 								닫기
 							</Button>
 						</DialogActions>
