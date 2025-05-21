@@ -279,25 +279,24 @@ const Home = ({customChallengeChanged, setCustomChallengeChanged}) => {
 			};
 			input.onchange = () => {
 				setTimeout(async () => {
-					if (!input.files || input.files.length === 0) {
-						alert("사진을 선택하지 않았습니다.");
-						setLoadingChallengeId(null);
-						return;
-					}
-					const file = input.files[0];
-					if (!file || file.size === 0) {
-						alert("사진 파일을 불러오지 못했습니다.");
-						setLoadingChallengeId(null);
-						return;
-					}
 					try {
+						if (!input.files || input.files.length === 0) throw new Error("사진을 선택하지 않았습니다.");
+						const file = input.files[0];
+						if (!file || file.size === 0) throw new Error("사진 파일을 불러오지 못했습니다.");
+
 						setAiImage(URL.createObjectURL(file));
 						setShowAiModal(true);
 						setAiStatus("loading");
 
 						const startTime = Date.now();
 						const fileName = `quest-photos/${Date.now()}_${file.name}`;
-						const photoUrl = await uploadImage(file, fileName);
+
+						// 업로드 타임아웃 처리
+						const photoUrl = await Promise.race([
+							uploadImage(file, fileName),
+							new Promise((_, reject) => setTimeout(() => reject(new Error("이미지 업로드 타임아웃")), 10000)),
+						]);
+
 						await completeQuest(photoUrl);
 
 						const elapsed = Date.now() - startTime;
@@ -313,7 +312,7 @@ const Home = ({customChallengeChanged, setCustomChallengeChanged}) => {
 							remaining > 0 ? remaining : 0
 						);
 					} catch (err) {
-						alert("이미지 업로드에 실패했습니다.");
+						alert(err.message || "인증 처리 중 문제가 발생했습니다.");
 						console.error(err);
 						setShowAiModal(false);
 						setAiStatus("loading");
@@ -321,7 +320,7 @@ const Home = ({customChallengeChanged, setCustomChallengeChanged}) => {
 					} finally {
 						setLoadingChallengeId(null);
 					}
-				}, 0);
+				}, 150);
 			};
 			input.oncancel = () => {
 				setLoadingChallengeId(null);
