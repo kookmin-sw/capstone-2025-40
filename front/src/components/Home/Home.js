@@ -148,24 +148,31 @@ const Home = ({customChallengeChanged, setCustomChallengeChanged}) => {
 			const {completed, total} = progressRes.data;
 			setTodayProgress(total > 0 ? (completed / total) * 100 : 0);
 
-			const customGroups = customRes.data.map((group) => ({
-				id: group.id,
-				title: group.title,
-				startDate: group.start_date,
-				endDate: group.end_date,
-				badgeImage: group.badge_image,
-				participants: group.participants.map((p) => `${p.nickname}${p.is_me ? " (나)" : ""}`),
-				challenges: group.assignments.map((a) => ({
-					id: a.quest.id,
-					text: a.quest.title,
-					useCamera: a.quest.use_camera,
-					is_completed: a.is_completed,
-				})),
-				completedCount: group.completed_assignment_count,
-				totalCount: group.total_assignment_count,
-				inviteCode: group.invite_code,
-				is_leader: group.is_leader,
-			}));
+			const customGroups = customRes.data.map((group) => {
+				const progress =
+					group.total_assignment_count > 0
+						? (group.completed_assignment_count / group.total_assignment_count) * 100
+						: 0;
+				return {
+					id: group.id,
+					title: group.title,
+					startDate: group.start_date,
+					endDate: group.end_date,
+					badgeImage: group.badge_image,
+					participants: group.participants.map((p) => `${p.nickname}${p.is_me ? " (나)" : ""}`),
+					challenges: group.assignments.map((a) => ({
+						id: a.quest.id,
+						text: a.quest.title,
+						useCamera: a.quest.use_camera,
+						is_completed: a.is_completed,
+					})),
+					completedCount: group.completed_assignment_count,
+					totalCount: group.total_assignment_count,
+					inviteCode: group.invite_code,
+					is_leader: group.is_leader,
+					progress,
+				};
+			});
 			setCustomChallengeGroups(customGroups);
 			const initialOpenStates = {};
 			customGroups.forEach((group) => {
@@ -267,48 +274,51 @@ const Home = ({customChallengeChanged, setCustomChallengeChanged}) => {
 			input.type = "file";
 			input.accept = "image/*";
 			// input.capture = "environment";
+			input.onclick = () => {
+				input.value = null; // Allow reselecting same image
+			};
 			input.onchange = () => {
 				setTimeout(async () => {
-					if (input.files && input.files.length > 0) {
-						const file = input.files[0];
-						if (!file || file.size === 0) {
-							alert("사진 파일을 불러오지 못했습니다.");
-							setLoadingChallengeId(null);
-							return;
-						}
+					if (!input.files || input.files.length === 0) {
+						alert("사진을 선택하지 않았습니다.");
+						setLoadingChallengeId(null);
+						return;
+					}
+					const file = input.files[0];
+					if (!file || file.size === 0) {
+						alert("사진 파일을 불러오지 못했습니다.");
+						setLoadingChallengeId(null);
+						return;
+					}
+					try {
+						setAiImage(URL.createObjectURL(file));
+						setShowAiModal(true);
+						setAiStatus("loading");
 
-						try {
-							setAiImage(URL.createObjectURL(file));
-							setShowAiModal(true);
-							setAiStatus("loading");
+						const startTime = Date.now();
+						const fileName = `quest-photos/${Date.now()}_${file.name}`;
+						const photoUrl = await uploadImage(file, fileName);
+						await completeQuest(photoUrl);
 
-							const startTime = Date.now();
-							const fileName = `quest-photos/${Date.now()}_${file.name}`;
-							const photoUrl = await uploadImage(file, fileName);
-							await completeQuest(photoUrl);
+						const elapsed = Date.now() - startTime;
+						const remaining = 5000 - elapsed;
 
-							const elapsed = Date.now() - startTime;
-							const remaining = 5000 - elapsed;
-
-							setAiStatus("success");
-							setTimeout(
-								() => {
-									setShowAiModal(false);
-									setAiStatus("loading");
-									setAiImage(null);
-								},
-								remaining > 0 ? remaining : 0
-							);
-						} catch (err) {
-							alert("이미지 업로드에 실패했습니다.");
-							console.error(err);
-							setShowAiModal(false);
-							setAiStatus("loading");
-							setAiImage(null);
-						} finally {
-							setLoadingChallengeId(null);
-						}
-					} else {
+						setAiStatus("success");
+						setTimeout(
+							() => {
+								setShowAiModal(false);
+								setAiStatus("loading");
+								setAiImage(null);
+							},
+							remaining > 0 ? remaining : 0
+						);
+					} catch (err) {
+						alert("이미지 업로드에 실패했습니다.");
+						console.error(err);
+						setShowAiModal(false);
+						setAiStatus("loading");
+						setAiImage(null);
+					} finally {
 						setLoadingChallengeId(null);
 					}
 				}, 0);
@@ -316,11 +326,9 @@ const Home = ({customChallengeChanged, setCustomChallengeChanged}) => {
 			input.oncancel = () => {
 				setLoadingChallengeId(null);
 			};
-
 			input.onerror = () => {
 				alert("사진을 불러오는 데 실패했습니다.");
 			};
-
 			if ("mediaDevices" in navigator && navigator.mediaDevices.getUserMedia) {
 				input.click();
 			} else {
@@ -606,9 +614,9 @@ const Home = ({customChallengeChanged, setCustomChallengeChanged}) => {
 									</Box>
 								)}
 								<Box className={styles.progressBox}>
-									<LinearProgress variant='determinate' value={customProgress} className={styles.progressBar} />
+									<LinearProgress variant='determinate' value={group.progress} className={styles.progressBar} />
 									<Typography className={styles.progressText}>
-										{Number.isInteger(customProgress) ? customProgress : customProgress.toFixed(1)}%
+										{Number.isInteger(group.progress) ? group.progress : group.progress.toFixed(1)}%
 									</Typography>
 								</Box>
 								{openCustomGroups[group.id] ? (
