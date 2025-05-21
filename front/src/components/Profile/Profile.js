@@ -92,6 +92,7 @@ const Profile = () => {
 	const [selectedBadge, setSelectedBadge] = useState();
 	const [openBadgeModal, setOpenBadgeModal] = useState(false);
 	const [point, setPoint] = useState(0);
+	const [customBadges, setCustomBadges] = useState([]);
 	const fetchUserProfile = useCallback(async () => {
 		try {
 			const res = await axiosInstance.get("/users/profile/my/");
@@ -106,6 +107,18 @@ const Profile = () => {
 			setCity(res.data.city);
 			setDistrict(res.data.district);
 			setUsername(res.data.username);
+			// Fetch custom challenge badges
+			try {
+				const badgeRes = await axiosInstance.get("/users/profile/my/badges/");
+				const customBadgeList = badgeRes.data.map((b) => ({
+					point: null,
+					name: `${b.challenge_title} 달성 뱃지`,
+					url: b.badge_image,
+				}));
+				setCustomBadges(customBadgeList);
+			} catch (e) {
+				console.error("커스텀 뱃지 불러오기 실패:", e);
+			}
 		} catch (error) {
 			console.error("프로필 정보 불러오기 실패:", error);
 		}
@@ -687,6 +700,36 @@ const Profile = () => {
 									</IconButton>
 								</Grid>
 							))}
+						{customBadges.map((badge, idx) => (
+							<Grid item xs={4} key={`custom-${idx}`} sx={{display: "flex", justifyContent: "center"}}>
+								<IconButton
+									onClick={async () => {
+										const confirmChange = window.confirm("뱃지를 변경하시겠습니까?");
+										if (confirmChange) {
+											setIsLoading(true);
+											try {
+												await axiosInstance.patch("/users/profile/my/", {
+													badge_image: badge.url,
+												});
+												setSelectedBadge(badge.url);
+												setOpenBadgeModal(false);
+											} catch (error) {
+												console.error("뱃지 변경 실패:", error);
+											} finally {
+												setIsLoading(false);
+											}
+										}
+									}}
+									sx={{flexDirection: "column"}}>
+									<Avatar src={badge.url || undefined} sx={{width: 56, height: 56}}>
+										{!badge.url && <Typography variant='caption'>없음</Typography>}
+									</Avatar>
+									<Typography variant='caption' align='center' sx={{whiteSpace: "pre-line"}}>
+										{badge.name}
+									</Typography>
+								</IconButton>
+							</Grid>
+						))}
 					</Grid>
 				</DialogContent>
 			</Dialog>

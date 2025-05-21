@@ -1,5 +1,15 @@
 import React, {useState, useEffect, useCallback} from "react";
-import {Box, Typography, LinearProgress, CircularProgress, Paper} from "@mui/material";
+import {
+	Box,
+	Typography,
+	LinearProgress,
+	CircularProgress,
+	Paper,
+	Dialog,
+	DialogContent,
+	IconButton,
+} from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import styles from "./Challenge.module.css";
@@ -25,11 +35,16 @@ const Challenge = () => {
 	const [refreshKey, setRefreshKey] = useState(0);
 	const [participantAnchorEl, setParticipantAnchorEl] = useState(null);
 	const participantOpen = Boolean(participantAnchorEl);
+	const [participantList, setParticipantList] = useState([]);
 
 	const [personalRankData, setPersonalRankData] = useState([]);
 	const [localRankData, setLocalRankData] = useState([]);
 	const [myPersonalRank, setMyPersonalRank] = useState(null);
 	const [myLocalRank, setMyLocalRank] = useState(null);
+
+	const [endedChallenges, setEndedChallenges] = useState([]);
+
+	const [previewImage, setPreviewImage] = useState(null);
 
 	const fetchLocalRanking = useCallback(async () => {
 		try {
@@ -97,10 +112,20 @@ const Challenge = () => {
 		}
 	}, []);
 
+	const fetchEndedChallenges = async () => {
+		try {
+			const res = await axiosInstance.get("/users/custom-challenge/my-ended/");
+			setEndedChallenges(res.data);
+		} catch (err) {
+			console.error("종료된 챌린지 데이터 불러오기 실패:", err);
+		}
+	};
+
 	useEffect(() => {
 		fetchStats();
 		fetchPersonalRanking();
 		fetchLocalRanking();
+		fetchEndedChallenges();
 	}, [fetchPersonalRanking, fetchLocalRanking]);
 
 	const openModal = (title, data) => {
@@ -229,56 +254,73 @@ const Challenge = () => {
 				{/* 종료된 챌린지 섹션 */}
 				<Box mt={4}>
 					<Typography className={styles.sectionTitle}>종료된 챌린지</Typography>
-					{[
-						{
-							title: "캡스톤 팀 40 챌린지 1",
-							date: "2025-04-28 ~ 2025-04-29",
-							members: 4,
-							progress: 100,
-						},
-						{
-							title: "캡스톤 팀 40 챌린지 2",
-							date: "2025-05-01 ~ 2025-05-05",
-							members: 4,
-							progress: 80,
-						},
-					].map((challenge, idx) => (
-						<Paper key={idx} sx={{p: 2, mb: 2, borderRadius: "12px"}}>
-							<Typography fontWeight='bold' sx={{color: "#2e7d32", fontSize: "16px"}}>
-								{challenge.title}
-							</Typography>
-							<Box display='flex' alignItems='center' justifyContent='center' gap={2} mt={0.5}>
-								<Box display='flex' alignItems='center' gap={0.5}>
-									<CalendarMonthIcon sx={{fontSize: 16, color: "#4caf50"}} />
-									<Typography sx={{fontSize: "14px", color: "#4caf50"}}>{challenge.date}</Typography>
-								</Box>
-								<Box
-									display='flex'
-									alignItems='center'
-									gap={0.5}
-									onClick={(e) => setParticipantAnchorEl(e.currentTarget)}
-									sx={{cursor: "pointer"}}>
-									<GroupsIcon sx={{fontSize: 16, color: "#4caf50"}} />
-									<Typography sx={{fontSize: "14px", color: "#4caf50"}}>{challenge.members}</Typography>
-								</Box>
-							</Box>
-							<Box display='flex' alignItems='center' gap={1} mt={1}>
-								<LinearProgress className={styles.progressBar} variant='determinate' value={challenge.progress} />
-								<Typography fontWeight='bold' color='#4caf50' minWidth={40}>
-									{challenge.progress}%
-								</Typography>
-							</Box>
-						</Paper>
-					))}
+					{endedChallenges.length > 0 &&
+						endedChallenges.map((challenge, idx) => {
+							const progress =
+								challenge.total_assignment_count > 0
+									? Math.round((challenge.completed_assignment_count / challenge.total_assignment_count) * 100)
+									: 0;
+							const dateRange = `${challenge.start_date} ~ ${challenge.end_date}`;
+							const members = challenge.participants.length;
+
+							return (
+								<Paper key={idx} sx={{p: 2, mb: 2, borderRadius: "12px"}}>
+									<Typography fontWeight='bold' sx={{color: "#2e7d32", fontSize: "16px"}}>
+										{challenge.title}
+									</Typography>
+									<Box display='flex' alignItems='center' justifyContent='center' gap={2} mt={0.5}>
+										<Box display='flex' alignItems='center' gap={0.5}>
+											<CalendarMonthIcon sx={{fontSize: 16, color: "#4caf50"}} />
+											<Typography sx={{fontSize: "14px", color: "#4caf50"}}>{dateRange}</Typography>
+										</Box>
+										<Box
+											display='flex'
+											alignItems='center'
+											gap={0.5}
+											onClick={(e) => {
+												setParticipantAnchorEl(e.currentTarget);
+												setParticipantList(challenge.participants);
+											}}
+											sx={{cursor: "pointer"}}>
+											<GroupsIcon sx={{fontSize: 16, color: "#4caf50"}} />
+											<Typography sx={{fontSize: "14px", color: "#4caf50"}}>{members}</Typography>
+										</Box>
+									</Box>
+									{challenge.badge_image && (
+										<Box display='flex' alignItems='center' justifyContent='center' gap={1} mt={1}>
+											<Typography sx={{fontSize: "14px", color: "#4caf50"}}>달성 뱃지:</Typography>
+											<Box onClick={() => setPreviewImage(challenge.badge_image)} sx={{cursor: "pointer"}}>
+												<img
+													src={challenge.badge_image}
+													alt='뱃지 이미지'
+													style={{
+														width: "32px",
+														height: "32px",
+														borderRadius: "50%",
+														objectFit: "cover",
+													}}
+												/>
+											</Box>
+										</Box>
+									)}
+									<Box display='flex' alignItems='center' gap={1} mt={1}>
+										<LinearProgress className={styles.progressBar} variant='determinate' value={progress} />
+										<Typography fontWeight='bold' color='#4caf50' minWidth={40}>
+											{progress}%
+										</Typography>
+									</Box>
+								</Paper>
+							);
+						})}
 					<Menu
 						anchorEl={participantAnchorEl}
 						open={participantOpen}
 						onClose={() => setParticipantAnchorEl(null)}
 						anchorOrigin={{vertical: "bottom", horizontal: "center"}}
 						transformOrigin={{vertical: "top", horizontal: "center"}}>
-						{["성창민 (방장)", "박상엄", "정하람", "채주원 (나)"].map((name) => (
-							<MenuItem key={name} sx={{fontSize: "14px", color: "#555"}}>
-								{name}
+						{participantList.map((p) => (
+							<MenuItem key={p.id} sx={{fontSize: "14px", color: "#555"}}>
+								{p.nickname + (p.is_me ? " (나)" : "")}
 							</MenuItem>
 						))}
 					</Menu>
@@ -290,6 +332,18 @@ const Challenge = () => {
 					rankData={selectedRankData}
 					title={modalTitle}
 				/>
+				{previewImage && (
+					<Dialog open={true} onClose={() => setPreviewImage(null)}>
+						<Box display='flex' justifyContent='flex-end' p={1}>
+							<IconButton onClick={() => setPreviewImage(null)} size='small'>
+								<CloseIcon />
+							</IconButton>
+						</Box>
+						<DialogContent>
+							<img src={previewImage} alt='미리보기' style={{width: "100%", height: "auto"}} />
+						</DialogContent>
+					</Dialog>
+				)}
 			</Box>
 		</PullToRefresh>
 	);

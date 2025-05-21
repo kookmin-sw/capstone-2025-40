@@ -1,10 +1,5 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useState, useRef} from "react";
 import {motion, AnimatePresence} from "framer-motion";
-import trash1 from "../../assets/certification/trash1.png";
-import trash2 from "../../assets/certification/trash2.png";
-import ecoback1 from "../../assets/certification/ecoback1.png";
-import ecoback2 from "../../assets/certification/ecoback2.png";
-import challengeImg from "../../assets/certification/challenge.png";
 import Avatar from "@mui/material/Avatar";
 import {
 	Box,
@@ -25,6 +20,7 @@ import {
 	FormControlLabel,
 	Checkbox,
 } from "@mui/material";
+import Snackbar from "@mui/material/Snackbar";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
@@ -33,6 +29,8 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import GroupsIcon from "@mui/icons-material/Groups";
 import CloseIcon from "@mui/icons-material/Close";
+import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import styles from "./Home.module.css";
@@ -45,19 +43,13 @@ import ko from "date-fns/locale/ko";
 import {MobileDatePicker} from "@mui/x-date-pickers/MobileDatePicker";
 import PullToRefresh from "../PullToRefresh/PullToRefresh";
 
-const CHALLENGE_LIST = [
-	{id: 1, text: "일회용품 사용하지 않기", useCamera: false},
-	{id: 2, text: "대중교통 타고 다니기", useCamera: false},
-	{id: 3, text: "쓰레기 줍기", useCamera: true},
-	{id: 4, text: "에코백 사용하기", useCamera: true},
-	{id: 5, text: "분리수거 잘 하기", useCamera: false},
-	{id: 6, text: "개인챌린지 모두 달성하기", useCamera: true},
-];
-
-const Home = () => {
+const Home = ({customChallengeChanged, setCustomChallengeChanged}) => {
 	const navigate = useNavigate();
 	const [todayChallenges, setTodayChallenges] = useState([]);
 	const [customChallengeGroups, setCustomChallengeGroups] = useState([]);
+	// State for snackbar
+	const [snackbarOpen, setSnackbarOpen] = useState(false);
+	const [snackbarMessage, setSnackbarMessage] = useState("");
 	const [completed, setCompleted] = useState([]);
 	const [tip, setTip] = useState("");
 	const [todayProgress, setTodayProgress] = useState(0);
@@ -65,48 +57,38 @@ const Home = () => {
 	const [loadingChallengeId, setLoadingChallengeId] = useState(null);
 	const [challengeLoading, setChallengeLoading] = useState(true);
 	const [isTodayChallengeOpen, setIsTodayChallengeOpen] = useState(true);
-	const [isCustomChallengeOpen, setIsCustomChallengeOpen] = useState(true);
+	const [openCustomGroups, setOpenCustomGroups] = useState({});
 	// const [isCustomChallengeDeleted, setIsCustomChallengeDeleted] = useState(false);
 
 	const [showAiModal, setShowAiModal] = useState(false);
 	const [aiImage, setAiImage] = useState(null);
 	const [aiStatus, setAiStatus] = useState("loading"); // "loading" | "success"
 
-	const [anchorEl, setAnchorEl] = useState(null);
-	const [showCustomEditDialog, setShowCustomEditDialog] = useState(false);
-	const open = Boolean(anchorEl);
-	const [participantAnchorEl, setParticipantAnchorEl] = useState(null);
-	const participantOpen = Boolean(participantAnchorEl);
+	const [editDialogGroupId, setEditDialogGroupId] = useState(null);
+	const [menuAnchorEls, setMenuAnchorEls] = useState({});
+	const [participantAnchorEls, setParticipantAnchorEls] = useState({});
+	const [selectedParticipants, setSelectedParticipants] = useState({});
 
 	// const [badgeImage, setBadgeImage] = useState(null);
 
 	const [openDetailModal, setOpenDetailModal] = useState(false);
 	const [selectedChallenge, setSelectedChallenge] = useState(null);
 	const [previewImage, setPreviewImage] = useState(null);
-	const handleOpenDetailModal = (challenge) => {
+	const [challengeResults, setChallengeResults] = useState([]);
+	const handleOpenDetailModal = async (challenge, challengeGroupId) => {
 		setSelectedChallenge(challenge);
 		setOpenDetailModal(true);
+		try {
+			const res = await axiosInstance.get(
+				`/users/custom-challenge/${challengeGroupId}/quests/${challenge.id}/results/`
+			);
+			setChallengeResults(res.data);
+		} catch (err) {
+			console.error("챌린지 결과 불러오기 실패:", err);
+		}
 	};
 
-	const challengeDetails = {
-		"일회용품 사용하지 않기": ["박상엄", "성창민", "정하람", "채주원"],
-		"대중교통 타고 다니기": ["박상엄", "성창민", "정하람"],
-		"쓰레기 줍기": [
-			{name: "성창민", image: trash1},
-			{name: "채주원", image: trash2},
-		],
-		"에코백 사용하기": [
-			{name: "박상엄", image: ecoback1},
-			{name: "정하람", image: ecoback2},
-		],
-		"분리수거 잘 하기": ["박상엄", "성창민", "정하람", "채주원"],
-		"개인챌린지 모두 달성하기": [
-			{name: "박상엄", image: challengeImg},
-			{name: "성창민", image: challengeImg},
-			{name: "정하람", image: challengeImg},
-			{name: "채주원", image: challengeImg},
-		],
-	};
+	// challengeDetails removed
 
 	const [editStartDate, setEditStartDate] = useState(() => {
 		const tomorrow = new Date();
@@ -118,21 +100,34 @@ const Home = () => {
 		end.setDate(end.getDate() + 2);
 		return end;
 	});
+	const [editTitle, setEditTitle] = useState("");
+	const [editChallenges, setEditChallenges] = useState([]);
 
-	const handleMenuClick = (event) => {
-		setAnchorEl(event.currentTarget);
+	const [editBadgeImage, setEditBadgeImage] = useState(null);
+	const editBadgeInputRef = useRef();
+	const [editIncludeBadge, setEditIncludeBadge] = useState(false);
+	// 항목 삭제 체크박스 및 선택 상태 관리
+	const [editDeleteChecked, setEditDeleteChecked] = useState({});
+	const [showDeleteCheckbox, setShowDeleteCheckbox] = useState(false);
+
+	const didInitRef = useRef(false);
+	const initialRenderRef = useRef(true);
+
+	const handleMenuClick = (event, groupId) => {
+		setMenuAnchorEls((prev) => ({...prev, [groupId]: event.currentTarget}));
 	};
-	const handleCloseMenu = () => {
-		setAnchorEl(null);
+	const handleCloseMenu = (groupId) => {
+		setMenuAnchorEls((prev) => ({...prev, [groupId]: null}));
 	};
 
 	const fetchAllData = async () => {
 		try {
 			setChallengeLoading(true);
 			const challengePromise = axiosInstance.get("/users/my-quests/today/");
-			const [tipRes, progressRes] = await Promise.all([
+			const [tipRes, progressRes, customRes] = await Promise.all([
 				axiosInstance.get("/users/tips/random/"),
 				axiosInstance.get("/users/my-quests/today/summary/"),
+				axiosInstance.get("/users/custom-challenge/my/"),
 			]);
 
 			const challengesRes = await challengePromise;
@@ -141,51 +136,49 @@ const Home = () => {
 			setTodayChallenges(challengeData);
 			const completedIds = challengeData.filter((c) => c.is_completed).map((c) => c.id);
 			setCompleted(completedIds);
+			customRes.data.forEach((group) => {
+				group.assignments.forEach((a) => {
+					if (a.is_completed) completedIds.push(a.quest.id);
+				});
+			});
+			setCompleted(completedIds);
 
 			setTip(tipRes.data.tip);
 
 			const {completed, total} = progressRes.data;
 			setTodayProgress(total > 0 ? (completed / total) * 100 : 0);
 
-			setCustomChallengeGroups([
-				{
-					id: 1,
-					title: "캡스톤 팀 40 커스텀 챌린지 🍀",
-					startDate: "2025-05-08",
-					endDate: "2025-05-30",
-					badgeImage: null,
-					participants: ["성창민 (방장)", "박상엄", "정하람", "채주원 (나)"],
-					challenges: CHALLENGE_LIST.slice(0, 6),
-				},
-				{
-					id: 2,
-					title: "일회용품 줄이기 챌린지 🌏",
-					startDate: "2025-05-01",
-					endDate: "2025-06-30",
-					badgeImage: null,
-					participants: ["성창민 (방장)", "박상엄", "정하람", "채주원 (나)"],
-					challenges: [
-						{id: 7, text: "텀블러 사용하기", useCamera: true},
-						{id: 8, text: "배달 시 일회용품 거절하기", useCamera: true},
-						{id: 9, text: "재사용 빨대 사용하기", useCamera: true},
-						{id: 10, text: "포장 대신 매장 식사 선택하기", useCamera: false},
-						{id: 11, text: "개인 식기(수저/컵) 챙기기", useCamera: true},
-					],
-				},
-			]);
+			const customGroups = customRes.data.map((group) => ({
+				id: group.id,
+				title: group.title,
+				startDate: group.start_date,
+				endDate: group.end_date,
+				badgeImage: group.badge_image,
+				participants: group.participants.map((p) => `${p.nickname}${p.is_me ? " (나)" : ""}`),
+				challenges: group.assignments.map((a) => ({
+					id: a.quest.id,
+					text: a.quest.title,
+					useCamera: a.quest.use_camera,
+					is_completed: a.is_completed,
+				})),
+				completedCount: group.completed_assignment_count,
+				totalCount: group.total_assignment_count,
+				inviteCode: group.invite_code,
+				is_leader: group.is_leader,
+			}));
+			setCustomChallengeGroups(customGroups);
+			const initialOpenStates = {};
+			customGroups.forEach((group) => {
+				initialOpenStates[group.id] = true;
+			});
+			setOpenCustomGroups(initialOpenStates);
 
-			const fixedCompleted = {
-				"일회용품 사용하지 않기": ["박상엄", "성창민", "정하람", "채주원"],
-				"대중교통 타고 다니기": ["박상엄", "성창민", "정하람"],
-				"쓰레기 줍기": ["성창민", "채주원"],
-				"에코백 사용하기": ["박상엄", "정하람"],
-				"분리수거 잘 하기": ["박상엄", "성창민", "정하람", "채주원"],
-				"개인챌린지 모두 달성하기": ["박상엄", "성창민", "정하람", "채주원"],
-			};
-			const username = "채주원";
-			const completedCount = CHALLENGE_LIST.filter((item) => fixedCompleted[item.text]?.includes(username)).length;
-			const totalCount = CHALLENGE_LIST.length;
-			setCustomProgress(totalCount > 0 ? (completedCount / totalCount) * 100 : 0);
+			if (customGroups.length > 0) {
+				const {completedCount, totalCount} = customGroups[0];
+				setCustomProgress(totalCount > 0 ? (completedCount / totalCount) * 100 : 0);
+			} else {
+				setCustomProgress(0);
+			}
 		} catch (err) {
 			console.error("데이터를 불러오지 못했습니다.", err);
 		} finally {
@@ -194,15 +187,50 @@ const Home = () => {
 	};
 
 	useEffect(() => {
-		fetchAllData();
+		if (!didInitRef.current) {
+			fetchAllData();
+			didInitRef.current = true;
+		}
 	}, []);
+
+	useEffect(() => {
+		if (initialRenderRef.current) {
+			initialRenderRef.current = false;
+			return;
+		}
+		fetchAllData();
+	}, [customChallengeChanged]);
+
+	useEffect(() => {
+		if (editDialogGroupId !== null) {
+			const selected = customChallengeGroups.find((g) => g.id === editDialogGroupId);
+			if (selected) {
+				setEditTitle(selected.title);
+				setEditChallenges(selected.challenges);
+				if (selected.badgeImage) {
+					setEditBadgeImage(selected.badgeImage);
+					setEditIncludeBadge(true);
+				} else {
+					setEditBadgeImage(null);
+					setEditIncludeBadge(false);
+				}
+			}
+			setEditDeleteChecked({});
+			setShowDeleteCheckbox(false);
+		}
+	}, [editDialogGroupId, customChallengeGroups]);
 
 	const handleChallenge = async (id, useCamera, isCustomChallenge = false) => {
 		setLoadingChallengeId(id);
 		const completeQuest = async (photoUrl = null) => {
 			try {
 				const payload = photoUrl ? {photo_url: photoUrl} : {};
-				await axiosInstance.post(`/users/my-quests/${id}/complete/`, payload);
+				const endpoint = isCustomChallenge
+					? `/users/custom-challenge/${
+							customChallengeGroups.find((group) => group.challenges.some((c) => c.id === id))?.id
+					  }/quests/${id}/complete/`
+					: `/users/my-quests/${id}/complete/`;
+				await axiosInstance.post(endpoint, payload);
 				setCompleted((prev) => [...prev, id]);
 				if (isCustomChallenge) {
 					const newCompletedCount =
@@ -214,29 +242,25 @@ const Home = () => {
 					const totalCount = todayChallenges.length;
 					setTodayProgress(totalCount > 0 ? (newCompletedCount / totalCount) * 100 : 0);
 				}
+				// 포인트 적립 알림 (성공 후에만 호출)
+				if (isCustomChallenge) {
+					alert("3포인트 적립되었습니다!");
+				} else {
+					alert("5 포인트 적립되었습니다!");
+				}
 			} catch (err) {
-				alert("퀘스트 인증에 실패했습니다.");
+				const detail = err.response?.data?.detail;
+				const reason = err.response?.data?.reason;
+				if (detail && reason) {
+					alert(`${detail}\n\n사유: ${reason}`);
+				} else {
+					alert("퀘스트 인증에 실패했습니다.");
+				}
 				console.error(err);
 			} finally {
 				setLoadingChallengeId(null);
 			}
 		};
-
-		if (isCustomChallenge) {
-			setCompleted((prev) => [...prev, id]);
-			if (isCustomChallenge) {
-				const newCompletedCount =
-					completed.filter((id) => customChallengeGroups[0].challenges.some((c) => c.id === id)).length + 1;
-				const totalCount = customChallengeGroups[0].challenges.length;
-				setCustomProgress(totalCount > 0 ? (newCompletedCount / totalCount) * 100 : 0);
-			} else {
-				const newCompletedCount = completed.filter((id) => todayChallenges.some((c) => c.id === id)).length + 1;
-				const totalCount = todayChallenges.length;
-				setTodayProgress(totalCount > 0 ? (newCompletedCount / totalCount) * 100 : 0);
-			}
-			setLoadingChallengeId(null);
-			return;
-		}
 
 		if (useCamera) {
 			const input = document.createElement("input");
@@ -397,141 +421,234 @@ const Home = () => {
 							</List>
 						))}
 
-					{customChallengeGroups.map((group) => (
-						<React.Fragment key={group.id}>
-							<Box className={styles.titleBox}>
-								<IconButton onClick={() => setIsCustomChallengeOpen((prev) => !prev)}>
-									{isCustomChallengeOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-								</IconButton>
-								<Typography variant='h6' className={styles.sectionTitle}>
-									{group.title}
-								</Typography>
-								<IconButton onClick={handleMenuClick}>
-									<MoreVertIcon />
-								</IconButton>
-								<Menu anchorEl={anchorEl} open={open} onClose={handleCloseMenu}>
-									<MenuItem
-										onClick={() => {
-											handleCloseMenu();
-											setShowCustomEditDialog(true);
-										}}>
-										챌린지 수정
-									</MenuItem>
-									<MenuItem
-										onClick={() => {
-											handleCloseMenu();
-											const confirmed = window.confirm("챌린지를 삭제하시겠습니까?");
-											if (confirmed) {
-												setCustomChallengeGroups((prev) => prev.filter((g) => g.id !== group.id));
-											}
-										}}>
-										챌린지 삭제
-									</MenuItem>
-									<MenuItem
-										onClick={() => {
-											handleCloseMenu();
-											const input = document.createElement("input");
-											input.type = "file";
-											input.accept = "image/*";
-											input.onchange = (e) => {
-												const file = e.target.files[0];
-												if (file) {
-													const reader = new FileReader();
-													reader.onload = () => {
-														const updated = customChallengeGroups.map((g) =>
-															g.id === group.id ? {...g, badgeImage: reader.result} : g
-														);
-														setCustomChallengeGroups(updated);
-													};
-													reader.readAsDataURL(file);
+					{customChallengeGroups.map((group) => {
+						const menuOpen = !!menuAnchorEls[group.id];
+						const participantOpen = !!participantAnchorEls[group.id];
+						return (
+							<React.Fragment key={group.id}>
+								<Box className={styles.titleBox}>
+									<IconButton
+										onClick={() =>
+											setOpenCustomGroups((prev) => ({
+												...prev,
+												[group.id]: !prev[group.id],
+											}))
+										}>
+										{openCustomGroups[group.id] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+									</IconButton>
+									<Typography variant='h6' className={styles.sectionTitle}>
+										{group.title}
+									</Typography>
+									<IconButton onClick={(e) => handleMenuClick(e, group.id)}>
+										<MoreVertIcon />
+									</IconButton>
+									<Menu anchorEl={menuAnchorEls[group.id]} open={menuOpen} onClose={() => handleCloseMenu(group.id)}>
+										<MenuItem
+											onClick={() => {
+												handleCloseMenu(group.id);
+												const inviteCode = customChallengeGroups.find((g) => g.id === group.id)?.inviteCode;
+												if (inviteCode) {
+													navigator.clipboard.writeText(inviteCode).then(() => {
+														setSnackbarMessage(`참여코드 "${inviteCode}"가 클립보드에 복사되었습니다.`);
+														setSnackbarOpen(true);
+													});
 												}
-											};
-											input.click();
-										}}>
-										뱃지 등록
-									</MenuItem>
+											}}>
+											참여코드 복사
+										</MenuItem>
+										{group.is_leader ? (
+											<>
+												<MenuItem
+													onClick={() => {
+														handleCloseMenu(group.id);
+														setEditDialogGroupId(group.id);
+													}}>
+													챌린지 수정
+												</MenuItem>
+												<MenuItem
+													onClick={async () => {
+														handleCloseMenu(group.id);
+														const confirmed = window.confirm("챌린지를 삭제하시겠습니까?");
+														if (confirmed) {
+															try {
+																await axiosInstance.delete(`/users/custom-challenge/${group.id}/`);
+																setCustomChallengeChanged((prev) => !prev);
+																fetchAllData();
+															} catch (err) {
+																console.error("챌린지 삭제 실패:", err);
+																alert("챌린지 삭제 중 오류가 발생했습니다.");
+															}
+														}
+													}}>
+													챌린지 삭제
+												</MenuItem>
+												<MenuItem
+													onClick={() => {
+														handleCloseMenu(group.id);
+														const input = document.createElement("input");
+														input.type = "file";
+														input.accept = "image/*";
+														input.onchange = async (e) => {
+															const file = e.target.files[0];
+															if (file) {
+																const reader = new FileReader();
+																reader.onload = async () => {
+																	const base64 = reader.result;
+																	try {
+																		await axiosInstance.patch(`/users/custom-challenge/${group.id}/`, {
+																			badge_image: base64,
+																		});
+																		setCustomChallengeChanged((prev) => !prev);
+																		fetchAllData();
+																	} catch (err) {
+																		console.error("뱃지 등록 실패:", err);
+																		alert("뱃지 등록 중 오류가 발생했습니다.");
+																	}
+																};
+																reader.readAsDataURL(file);
+															}
+														};
+														input.click();
+													}}>
+													뱃지 등록
+												</MenuItem>
+												<MenuItem
+													onClick={async () => {
+														handleCloseMenu(group.id);
+														const confirmed = window.confirm("챌린지를 수동 종료하시겠습니까?");
+														if (confirmed) {
+															try {
+																await axiosInstance.post(`/users/custom-challenge/${group.id}/close/`);
+																setCustomChallengeChanged((prev) => !prev);
+																fetchAllData();
+															} catch (err) {
+																console.error("챌린지 종료 실패:", err);
+																alert("챌린지 종료 중 오류가 발생했습니다.");
+															}
+														}
+													}}>
+													챌린지 수동 종료
+												</MenuItem>
+											</>
+										) : (
+											<MenuItem
+												onClick={async () => {
+													handleCloseMenu(group.id);
+													const confirmed = window.confirm("챌린지에서 탈퇴하시겠습니까?");
+													if (confirmed) {
+														try {
+															await axiosInstance.delete(`/users/custom-challenge/${group.id}/leave/`);
+															setCustomChallengeChanged((prev) => !prev);
+															fetchAllData();
+														} catch (err) {
+															console.error("챌린지 탈퇴 실패:", err);
+															alert("챌린지 탈퇴 중 오류가 발생했습니다.");
+														}
+													}
+												}}>
+												챌린지 탈퇴
+											</MenuItem>
+										)}
+									</Menu>
+								</Box>
+								<Box display='flex' justifyContent='center' alignItems='center' gap={3} mb={1}>
+									<Box display='flex' alignItems='center' gap={0.5}>
+										<CalendarMonthIcon sx={{color: "#4caf50", fontSize: "18px"}} />
+										<Typography sx={{color: "#4caf50", fontSize: "14px"}}>
+											{group.startDate} ~ {group.endDate}
+										</Typography>
+									</Box>
+									<Box
+										display='flex'
+										alignItems='center'
+										gap={0.5}
+										onClick={(e) => {
+											const target = e.currentTarget;
+											setSelectedParticipants((prev) => ({
+												...prev,
+												[group.id]: [...group.participants],
+											}));
+											setTimeout(() => {
+												setParticipantAnchorEls((prev) => ({
+													...prev,
+													[group.id]: target,
+												}));
+											}, 0);
+										}}
+										sx={{cursor: "pointer"}}>
+										<GroupsIcon sx={{color: "#4caf50", fontSize: "18px"}} />
+										<Typography sx={{color: "#4caf50", fontSize: "14px"}}>{group.participants.length}</Typography>
+									</Box>
+								</Box>
+								<Menu
+									anchorEl={participantAnchorEls[group.id]}
+									open={participantOpen}
+									onClose={() =>
+										setParticipantAnchorEls((prev) => ({
+											...prev,
+											[group.id]: null,
+										}))
+									}
+									anchorOrigin={{vertical: "bottom", horizontal: "center"}}
+									transformOrigin={{vertical: "top", horizontal: "center"}}>
+									{(selectedParticipants[group.id] || []).map((name) => (
+										<MenuItem key={name} sx={{fontSize: "14px", color: "#555"}}>
+											{name}
+										</MenuItem>
+									))}
 								</Menu>
-							</Box>
-							<Box display='flex' justifyContent='center' alignItems='center' gap={3} mb={1}>
-								<Box display='flex' alignItems='center' gap={0.5}>
-									<CalendarMonthIcon sx={{color: "#4caf50", fontSize: "18px"}} />
-									<Typography sx={{color: "#4caf50", fontSize: "14px"}}>
-										{group.startDate} ~ {group.endDate}
+								{group.badgeImage && (
+									<Box display='flex' alignItems='center' justifyContent='center' gap={1} mt={1}>
+										<Typography sx={{color: "#4caf50", fontSize: "14px"}}>달성 뱃지:</Typography>
+										<Box onClick={() => setPreviewImage(group.badgeImage)} sx={{cursor: "pointer"}}>
+											<Avatar src={group.badgeImage} sx={{width: 30, height: 30}} />
+										</Box>
+									</Box>
+								)}
+								<Box className={styles.progressBox}>
+									<LinearProgress variant='determinate' value={customProgress} className={styles.progressBar} />
+									<Typography className={styles.progressText}>
+										{Number.isInteger(customProgress) ? customProgress : customProgress.toFixed(1)}%
 									</Typography>
 								</Box>
-								<Box
-									display='flex'
-									alignItems='center'
-									gap={0.5}
-									onClick={(e) => {
-										setParticipantAnchorEl(e.currentTarget);
-										setSelectedChallenge(group); // Save current group
-									}}
-									sx={{cursor: "pointer"}}>
-									<GroupsIcon sx={{color: "#4caf50", fontSize: "18px"}} />
-									<Typography sx={{color: "#4caf50", fontSize: "14px"}}>{group.participants.length}</Typography>
-								</Box>
-							</Box>
-							<Menu
-								anchorEl={participantAnchorEl}
-								open={participantOpen}
-								onClose={() => setParticipantAnchorEl(null)}
-								anchorOrigin={{vertical: "bottom", horizontal: "center"}}
-								transformOrigin={{vertical: "top", horizontal: "center"}}>
-								{(selectedChallenge?.participants || []).map((name) => (
-									<MenuItem key={name} sx={{fontSize: "14px", color: "#555"}}>
-										{name}
-									</MenuItem>
-								))}
-							</Menu>
-							{group.badgeImage && (
-								<Box display='flex' alignItems='center' justifyContent='center' gap={1} mt={1}>
-									<Typography sx={{color: "#4caf50", fontSize: "14px"}}>달성 뱃지:</Typography>
-									<Avatar src={group.badgeImage} sx={{width: 30, height: 30}} />
-								</Box>
-							)}
-							<Box className={styles.progressBox}>
-								<LinearProgress variant='determinate' value={customProgress} className={styles.progressBar} />
-								<Typography className={styles.progressText}>
-									{Number.isInteger(customProgress) ? customProgress : customProgress.toFixed(1)}%
-								</Typography>
-							</Box>
-							{isCustomChallengeOpen &&
-								(challengeLoading ? (
-									<Box display='flex' justifyContent='center' alignItems='center'>
-										<CircularProgress color='success' />
-									</Box>
-								) : (
-									<List className={styles.challengeList}>
-										{group.challenges.map((challenge) => (
-											<Paper elevation={2} className={styles.challengeCard} key={challenge.id}>
-												<ListItem
-													className={styles.challengeItem}
-													onClick={() => handleOpenDetailModal(challenge)}
-													sx={{cursor: "pointer"}}>
-													<ListItemText primary={challenge.text} />
-													{completed.includes(challenge.id) ? (
-														<CheckCircleIcon color='success' />
-													) : loadingChallengeId === challenge.id ? (
-														<CircularProgress size={24} color='success' />
-													) : (
-														<Button
-															variant='outlined'
-															className={styles.challengeButton}
-															onClick={(e) => {
-																e.stopPropagation();
-																handleChallenge(challenge.id, challenge.useCamera, true);
-															}}>
-															{challenge.useCamera ? <CameraAltIcon fontSize='small' /> : "도전"}
-														</Button>
-													)}
-												</ListItem>
-											</Paper>
-										))}
-									</List>
-								))}
-						</React.Fragment>
-					))}
+								{openCustomGroups[group.id] ? (
+									challengeLoading ? (
+										<Box display='flex' justifyContent='center' alignItems='center'>
+											<CircularProgress color='success' />
+										</Box>
+									) : (
+										<List className={styles.challengeList}>
+											{group.challenges.map((challenge) => (
+												<Paper elevation={2} className={styles.challengeCard} key={challenge.id}>
+													<ListItem
+														className={styles.challengeItem}
+														onClick={() => handleOpenDetailModal(challenge, group.id)}
+														sx={{cursor: "pointer"}}>
+														<ListItemText primary={challenge.text} />
+														{completed.includes(challenge.id) ? (
+															<CheckCircleIcon color='success' />
+														) : loadingChallengeId === challenge.id ? (
+															<CircularProgress size={24} color='success' />
+														) : (
+															<Button
+																variant='outlined'
+																className={styles.challengeButton}
+																onClick={(e) => {
+																	e.stopPropagation();
+																	handleChallenge(challenge.id, challenge.useCamera, true);
+																}}>
+																{challenge.useCamera ? <CameraAltIcon fontSize='small' /> : "도전"}
+															</Button>
+														)}
+													</ListItem>
+												</Paper>
+											))}
+										</List>
+									)
+								) : null}
+							</React.Fragment>
+						);
+					})}
 
 					<div className={styles.tipContainer}>
 						<Typography variant='subtitle1' className={styles.tipTitle}>
@@ -540,7 +657,7 @@ const Home = () => {
 						<Typography className={styles.tipText}>{tip}</Typography>
 					</div>
 
-					<Dialog open={showCustomEditDialog} onClose={() => setShowCustomEditDialog(false)} fullWidth>
+					<Dialog open={editDialogGroupId !== null} onClose={() => setEditDialogGroupId(null)} fullWidth>
 						<DialogTitle sx={{color: "#2e7d32", fontWeight: "bold"}}>챌린지 수정</DialogTitle>
 						<DialogContent dividers>
 							<TextField
@@ -548,7 +665,8 @@ const Home = () => {
 								color='success'
 								fullWidth
 								label='챌린지 제목'
-								value={"캡스톤 팀 40 커스텀 챌린지 🍀"}
+								value={editTitle}
+								onChange={(e) => setEditTitle(e.target.value)}
 								margin='dense'
 							/>
 							<LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
@@ -557,7 +675,11 @@ const Home = () => {
 								</Typography>
 								<Box display='flex' alignItems='center' gap={1} mt={2}>
 									<MobileDatePicker
-										value={new Date("2025-05-08")}
+										value={
+											customChallengeGroups.find((g) => g.id === editDialogGroupId)
+												? new Date(customChallengeGroups.find((g) => g.id === editDialogGroupId).startDate)
+												: new Date()
+										}
 										format='yyyy-MM-dd'
 										closeOnSelect
 										slotProps={{
@@ -575,7 +697,7 @@ const Home = () => {
 									/>
 									<Typography>~</Typography>
 									<MobileDatePicker
-										value={new Date("2025-05-30")}
+										value={editEndDate}
 										onChange={(newValue) => {
 											if (newValue) {
 												setEditEndDate(newValue);
@@ -600,26 +722,212 @@ const Home = () => {
 							</LocalizationProvider>
 							<Box mt={2}>
 								<Typography variant='subtitle1'>챌린지 항목</Typography>
-								{customChallengeGroups.length > 0 &&
-									customChallengeGroups[0].challenges.slice(0, 6).map((item, index) => (
-										<Box key={item.id} display='flex' alignItems='center' gap={1}>
-											<TextField variant='outlined' color='success' size='small' fullWidth value={item.text} />
-											<FormControlLabel
-												sx={{whiteSpace: "nowrap", minWidth: "64px"}}
-												labelPlacement='end'
-												control={<Checkbox checked={item.useCamera} color='success' />}
-												label='인증'
+								{editChallenges.slice(0, 6).map((item, index) => (
+									<Box key={item.id} display='flex' alignItems='center' gap={1}>
+										{showDeleteCheckbox && (
+											<Checkbox
+												color='error'
+												checked={!!editDeleteChecked[item.id]}
+												onChange={(e) =>
+													setEditDeleteChecked((prev) => ({
+														...prev,
+														[item.id]: e.target.checked,
+													}))
+												}
 											/>
-										</Box>
-									))}
+										)}
+										<TextField
+											variant='outlined'
+											color='success'
+											size='small'
+											fullWidth
+											value={item.text}
+											onChange={(e) =>
+												setEditChallenges((prev) =>
+													prev.map((it) => (it.id === item.id ? {...it, text: e.target.value} : it))
+												)
+											}
+										/>
+										<FormControlLabel
+											sx={{whiteSpace: "nowrap", minWidth: "64px"}}
+											labelPlacement='end'
+											control={
+												<Checkbox
+													checked={item.useCamera}
+													color='success'
+													onChange={(e) =>
+														setEditChallenges((prev) =>
+															prev.map((it) => (it.id === item.id ? {...it, useCamera: e.target.checked} : it))
+														)
+													}
+												/>
+											}
+											label='인증'
+										/>
+									</Box>
+								))}
+								<Button
+									startIcon={<AddIcon />}
+									sx={{mt: 1}}
+									color='success'
+									onClick={() =>
+										setEditChallenges((prev) => [
+											...prev,
+											{
+												id: `temp-${Date.now()}-${Math.random()}`,
+												text: "",
+												useCamera: false,
+											},
+										])
+									}>
+									항목 추가
+								</Button>
+								{editChallenges.length > 1 && (
+									<Box display='flex' alignItems='center' gap={1} mt={1}>
+										<Button
+											startIcon={<RemoveIcon />}
+											color='error'
+											onClick={() => setShowDeleteCheckbox((prev) => !prev)}>
+											항목 삭제
+										</Button>
+										{showDeleteCheckbox && (
+											<Button
+												color='error'
+												onClick={() => {
+													const remaining = editChallenges.filter((item) => !editDeleteChecked[item.id]);
+													setEditChallenges(remaining.length > 0 ? remaining : editChallenges);
+													setEditDeleteChecked({});
+													if (remaining.length <= 1) setShowDeleteCheckbox(false);
+												}}>
+												삭제
+											</Button>
+										)}
+									</Box>
+								)}
 							</Box>
-							<FormControlLabel control={<Checkbox color='success' checked />} label='뱃지 등록' sx={{mt: 1}} />
+							<FormControlLabel
+								control={
+									<Checkbox
+										color='success'
+										checked={editIncludeBadge}
+										onChange={(e) => {
+											setEditIncludeBadge(e.target.checked);
+											if (!e.target.checked) {
+												setEditBadgeImage(null);
+											}
+										}}
+									/>
+								}
+								label='뱃지 등록'
+								sx={{mt: 1}}
+							/>
+							{editIncludeBadge && (
+								<Box mt={1} display='flex' alignItems='center' gap={2}>
+									<Button variant='outlined' color='success' onClick={() => editBadgeInputRef.current?.click()}>
+										뱃지 선택
+									</Button>
+									{editBadgeImage && (
+										<Box
+											component='img'
+											src={editBadgeImage}
+											alt='뱃지 미리보기'
+											sx={{
+												width: 40,
+												height: 40,
+												borderRadius: "50%",
+												objectFit: "cover",
+											}}
+										/>
+									)}
+									<input
+										ref={editBadgeInputRef}
+										type='file'
+										accept='image/*'
+										hidden
+										onChange={(e) => {
+											const file = e.target.files?.[0];
+											if (file) {
+												setEditBadgeImage(URL.createObjectURL(file));
+											}
+										}}
+									/>
+								</Box>
+							)}
 						</DialogContent>
 						<DialogActions>
-							<Button color='inherit' onClick={() => setShowCustomEditDialog(false)}>
+							<Button color='inherit' onClick={() => setEditDialogGroupId(null)}>
 								취소
 							</Button>
-							<Button variant='contained' color='success' onClick={() => setShowCustomEditDialog(false)}>
+							<Button
+								variant='contained'
+								color='success'
+								onClick={async () => {
+									const original = customChallengeGroups.find((g) => g.id === editDialogGroupId);
+									if (!original) return;
+
+									const data = {};
+									if (editTitle !== original.title) data.title = editTitle;
+									// Compare end date as yyyy-MM-dd string
+									const origEndDateStr = original.endDate;
+									const editEndDateStr = editEndDate.toISOString().split("T")[0];
+									if (editEndDateStr !== origEndDateStr) {
+										data.end_date = editEndDateStr;
+									}
+									if (editIncludeBadge && editBadgeImage && editBadgeImage !== original.badgeImage) {
+										try {
+											const fileUrl = await uploadImage(
+												await fetch(editBadgeImage).then((res) => res.blob()),
+												`badges/${Date.now()}_badge.png`
+											);
+											data.badge_image = fileUrl;
+										} catch (err) {
+											console.error("뱃지 이미지 업로드 실패:", err);
+											alert("뱃지 이미지 업로드 중 오류가 발생했습니다.");
+											return;
+										}
+									}
+
+									// Build quests array with id for existing quests, omit id for new ones
+									const transformedQuests = editChallenges.map((c) => {
+										const quest = {
+											title: c.text,
+											use_camera: c.useCamera,
+											point: 3,
+											description: "",
+										};
+										if (!String(c.id).startsWith("temp-")) {
+											quest.id = c.id;
+										}
+										return quest;
+									});
+									// Only include quests if changed (by id or title)
+									const hasQuestChanged = () => {
+										if (original.challenges.length !== editChallenges.length) return true;
+										for (let i = 0; i < editChallenges.length; i++) {
+											const orig = original.challenges[i];
+											const edited = editChallenges[i];
+											if (String(edited.id).startsWith("temp-")) return true;
+											if (orig.id !== edited.id || orig.text !== edited.text || orig.useCamera !== edited.useCamera)
+												return true;
+										}
+										return false;
+									};
+
+									if (hasQuestChanged()) {
+										data.quests = transformedQuests;
+									}
+
+									try {
+										await axiosInstance.patch(`/users/custom-challenge/${editDialogGroupId}/`, data);
+										alert("챌린지가 수정되었습니다.");
+										setCustomChallengeChanged((prev) => !prev);
+										setEditDialogGroupId(null);
+										fetchAllData();
+									} catch (err) {
+										console.error("챌린지 수정 실패:", err);
+										alert("챌린지 수정 중 오류가 발생했습니다.");
+									}
+								}}>
 								확인
 							</Button>
 						</DialogActions>
@@ -632,31 +940,52 @@ const Home = () => {
 									: selectedChallenge.text)}
 						</DialogTitle>
 						<DialogContent dividers sx={{maxHeight: 400}}>
-							{Array.isArray(challengeDetails[selectedChallenge?.text]) &&
-								challengeDetails[selectedChallenge?.text].map((item, idx) => (
-									<Paper
-										key={idx}
-										sx={{
-											p: 1.5,
-											mb: 1,
-											display: "flex",
-											justifyContent: "space-between",
-											alignItems: "center",
-											borderRadius: "12px",
-										}}>
-										<Typography sx={{fontSize: "14px", color: "#2e7d32"}}>
-											{typeof item === "string" ? item : item.name}
-										</Typography>
-										{selectedChallenge?.useCamera && typeof item === "object" && (
-											<img
-												src={item.image}
-												alt='cert'
-												style={{width: 40, height: 40, borderRadius: 8, objectFit: "cover", cursor: "pointer"}}
-												onClick={() => setPreviewImage(item.image)}
+							{challengeResults.map((result) => (
+								<Paper
+									key={result.id}
+									sx={{
+										p: 1.5,
+										mb: 1,
+										display: "flex",
+										justifyContent: "space-between",
+										alignItems: "center",
+										borderRadius: "12px",
+									}}>
+									<Box display='flex' alignItems='center' gap={1}>
+										<Avatar
+											src={
+												result.user.profile_image ??
+												"https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/profile-images%2FGreenDayProfile.png?alt=media&token=dc457190-a5f4-4ea9-be09-39a31aafef7c"
+											}
+											sx={{width: 32, height: 32, cursor: "pointer"}}
+											onClick={() =>
+												setPreviewImage(
+													result.user.profile_image ??
+														"https://firebasestorage.googleapis.com/v0/b/greenday-8d0a5.firebasestorage.app/o/profile-images%2FGreenDayProfile.png?alt=media&token=dc457190-a5f4-4ea9-be09-39a31aafef7c"
+												)
+											}
+										/>
+										<Typography sx={{fontSize: "14px", color: "#2e7d32"}}>{result.user.nickname}</Typography>
+										{result.user.badge_image && (
+											<Avatar
+												src={result.user.badge_image}
+												sx={{width: 32, height: 32, cursor: "pointer"}}
+												variant='rounded'
+												onClick={() => setPreviewImage(result.user.badge_image)}
 											/>
 										)}
-									</Paper>
-								))}
+									</Box>
+									{result.photo_url && (
+										<Box
+											component='img'
+											src={result.photo_url}
+											alt='인증 이미지'
+											sx={{width: 48, height: 48, borderRadius: 1, objectFit: "cover", cursor: "pointer"}}
+											onClick={() => setPreviewImage(result.photo_url)}
+										/>
+									)}
+								</Paper>
+							))}
 						</DialogContent>
 						<DialogActions>
 							<Button color='success' onClick={() => setOpenDetailModal(false)}>
@@ -678,6 +1007,18 @@ const Home = () => {
 					)}
 				</Box>
 			</PullToRefresh>
+			<Snackbar
+				open={snackbarOpen}
+				autoHideDuration={3000}
+				onClose={() => setSnackbarOpen(false)}
+				message={snackbarMessage}
+				anchorOrigin={{vertical: "top", horizontal: "center"}}
+				ContentProps={{
+					sx: {
+						mt: 6,
+					},
+				}}
+			/>
 		</>
 	);
 };
