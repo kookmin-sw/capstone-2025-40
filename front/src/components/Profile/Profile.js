@@ -690,7 +690,12 @@ const Profile = () => {
 												}
 											}
 										}}
-										sx={{flexDirection: "column"}}>
+										sx={{
+											flexDirection: "column",
+											backgroundColor: selectedBadge === badge.url ? "#e8f5e9" : "transparent",
+											border: selectedBadge === badge.url ? "2px solid #66bb6a" : "none",
+											borderRadius: 2,
+										}}>
 										<Avatar src={badge.url || undefined} sx={{width: 56, height: 56}}>
 											{!badge.url && <Typography variant='caption'>없음</Typography>}
 										</Avatar>
@@ -720,7 +725,12 @@ const Profile = () => {
 											}
 										}
 									}}
-									sx={{flexDirection: "column"}}>
+									sx={{
+										flexDirection: "column",
+										backgroundColor: selectedBadge === badge.url ? "#e8f5e9" : "transparent",
+										border: selectedBadge === badge.url ? "2px solid #66bb6a" : "none",
+										borderRadius: 2,
+									}}>
 									<Avatar src={badge.url || undefined} sx={{width: 56, height: 56}}>
 										{!badge.url && <Typography variant='caption'>없음</Typography>}
 									</Avatar>
