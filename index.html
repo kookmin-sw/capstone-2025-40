@@ -86,6 +86,21 @@
                 </div>
             </div>
         </section>
+        <section id="section3-2-1" class="section feature-section">
+            <div class="feature-container">
+                <div class="feature-content">
+                    <div class="feature-text">
+                        <h3>챌린지 인증</h3>
+                        <p>AI가 자동으로 인증 사진을 판별합니다.<br>
+                            별도의 검수 없이 빠르고 정확하게<br>
+                            인증 과정을 완료할 수 있어요.</p>
+                    </div>
+                    <div class="feature-image">
+                        <img src="src/apple-iphone-15-black-mockup/certification.png" alt="챌린지 인증">
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <section id="section3-3" class="section feature-section">
             <div class="feature-container">
@@ -145,27 +160,164 @@
 
         <section id="section4" class="section">
             <h2>👥 팀원 소개</h2>
-            <ul>
-                <li>성창민 - 역할 설명</li>
-                <li>박상엄 - 역할 설명</li>
-                <li>정하람 - 역할 설명</li>
-                <li>채주원 - 역할 설명</li>
-            </ul>
+            <div class="team-section">
+                <div class="team-member">
+                    <img src="src/members/sung.jpg" alt="성창민">
+                    <strong>성창민</strong><br>
+                    <span class="role">백엔드</span><br>
+                    Django 기반 REST API, JWT 인증, Celery+Redis 비동기 처리, OpenAI API 연동
+                </div>
+                <div class="team-member">
+                    <img src="src/members/park.jpg" alt="박상엄">
+                    <strong>박상엄</strong><br>
+                    <span class="role">프론트엔드</span><br>
+                    화면별 API 연동 및 이슈 관리, 데이터셋 구축
+                </div>
+                <div class="team-member">
+                    <img src="src/members/jung.jpg" alt="정하람">
+                    <strong>정하람</strong><br>
+                    <span class="role">기획, 인프라</span><br>
+                    서비스 기획, AWS EC2, EBS, RDS를 활용한 서버 및 데이터베이스 환경 구성
+                </div>
+                <div class="team-member">
+                    <img src="src/members/chae.jpg" alt="채주원">
+                    <strong>채주원</strong><br>
+                    <span class="role">프론트엔드</span><br>
+                    React PWA 기반 UI/UX 설계, 퍼블리싱, Firebase 호스팅 및 Storage 설정
+                </div>
+            </div>
         </section>
 
         <section id="section5" class="section">
             <h2>🛠️ 기술 스택</h2>
-            <ul>
-                <li>Frontend: React PWA, JSX, Redux</li>
-                <li>Backend: Django, DRF</li>
-                <li>Database: AWS RDS, PostgreSQL</li>
-                <li>Server: AWS EC2/EBS, Nginx, Gunicorn</li>
-                <li>DevOps: GitHub Actions</li>
-            </ul>
+
+            <!-- Front-end Table -->
+            <h3>🎨 Front-end</h3>
+            <table class="tech-table">
+                <tr>
+                    <th>항목</th>
+                    <th>설명</th>
+                </tr>
+                <tr>
+                    <td>프로그래밍 언어</td>
+                    <td><img src="src/assets/jsx-icon.png" class="icon"> JavaScript, JSX</td>
+                </tr>
+                <tr>
+                    <td>UI 라이브러리</td>
+                    <td><img src="src/assets/React-icon.png" class="icon"> React PWA</td>
+                </tr>
+                <tr>
+                    <td>상태 관리</td>
+                    <td><img src="src/assets/redux-icon.png" class="icon"> Redux Toolkit</td>
+                </tr>
+                <tr>
+                    <td>패키지 매니저</td>
+                    <td><img src="src/assets/Npm-icon.svg" class="icon"> npm</td>
+                </tr>
+                <tr>
+                    <td>UI 컴포넌트</td>
+                    <td><img src="src/assets/material-icon.png" class="icon"> MUI (Material UI)</td>
+                </tr>
+                <tr>
+                    <td>스타일링</td>
+                    <td><img src="src/assets/css-icon.png" class="icon"> CSS Modules (.module.css)</td>
+                </tr>
+                <tr>
+                    <td>호스팅</td>
+                    <td><img src="src/assets/firebase-icon.png" class="icon"> Firebase Hosting</td>
+                </tr>
+                <tr>
+                    <td>이미지 업로드</td>
+                    <td><img src="src/assets/firebase-icon.png" class="icon"> Firebase Storage</td>
+                </tr>
+                <tr>
+                    <td>코드 검사</td>
+                    <td><img src="src/assets/eslint-icon.png" class="icon"> ESLint</td>
+                </tr>
+                <tr>
+                    <td>코드 포맷팅</td>
+                    <td><img src="src/assets/prettier-icon.png" class="icon"> Prettier</td>
+                </tr>
+            </table>
+
+            <!-- Back-end Table -->
+            <h3>🖥️ Back-end</h3>
+            <table class="tech-table">
+                <tr>
+                    <th>항목</th>
+                    <th>설명</th>
+                </tr>
+                <tr>
+                    <td>프로그래밍 언어</td>
+                    <td><img src="src/assets/python-icon.png" class="icon"> Python</td>
+                </tr>
+                <tr>
+                    <td>백엔드 프레임워크</td>
+                    <td><img src="src/assets/django-icon.png" class="icon"> Django, Django REST Framework</td>
+                </tr>
+                <tr>
+                    <td>인증 시스템</td>
+                    <td><img src="src/assets/jwt-logo.png" class="icon"> JWT (SimpleJWT)</td>
+                </tr>
+                <tr>
+                    <td>데이터베이스</td>
+                    <td><img src="src/assets/postgresql-icon.png" class="icon"> PostgreSQL</td>
+                </tr>
+                <tr>
+                    <td>스케줄러</td>
+                    <td><img src="src/assets/crontab-icon.png" width="40" class="icon"> crontab</td>
+                </tr>
+                <tr>
+                    <td>API 설계</td>
+                    <td><img src="src/assets/restapi-icon.png" class="icon"> RESTful API</td>
+                </tr>
+                <tr>
+                    <td>서버 운영</td>
+                    <td><img src="src/assets/aws-logo.png" class="icon"> AWS EC2, EBS</td>
+                </tr>
+                <tr>
+                    <td>배포 연동</td>
+                    <td><img src="src/assets/gunicorn-logo.png" class="icon"> Gunicorn, <img
+                            src="src/assets/nginx-icon.svg" class="icon"> Nginx</td>
+                </tr>
+            </table>
+
+            <!-- AI Table -->
+            <h3>🤖 AI</h3>
+            <table class="tech-table">
+                <tr>
+                    <th>항목</th>
+                    <th>설명</th>
+                </tr>
+                <tr>
+                    <td>이미지 인증</td>
+                    <td><img src="src/assets/chatgpt-icon.png" class="icon"> GPT-4 Vision</td>
+                </tr>
+            </table>
+
+            <!-- Common Table -->
+            <h3>🧩 Common</h3>
+            <table class="tech-table">
+                <tr>
+                    <th>항목</th>
+                    <th>설명</th>
+                </tr>
+                <tr>
+                    <td>프로젝트 협업</td>
+                    <td><img src="src/assets/notion-icon.png" class="icon"> Notion</td>
+                </tr>
+                <tr>
+                    <td>팀 커뮤니케이션</td>
+                    <td><img src="src/assets/discord-icon.png" class="icon"> Discord</td>
+                </tr>
+            </table>
         </section>
 
         <section id="section6" class="section">
-            <img src="src/architecture.png" alt="서비스 아키텍처">
+            <h2>🛠️ 서비스 아키텍쳐</h2>
+            <div class="architecture-image">
+                <img src="src/assets/architecture.png" alt="서비스 아키텍처">
+            </div>
         </section>
 
         <section id="section7" class="section">
