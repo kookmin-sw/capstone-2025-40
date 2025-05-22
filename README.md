@@ -25,37 +25,9 @@ GreenDay는 사용자가 일상 속에서 환경 보호를 실천할 수 있도�
 
 ## 👥 팀원 소개
 
-<div align="center" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; padding: 20px; border-radius: 12px;">
-  
-  <div style="width: 160px; text-align: center; padding: 16px; background: #e8f5e9; border-radius: 20px;">
-    <img src="src/members/sung.jpg" alt="성창민" style="width: 100px; height: 100px; border-radius: 50%;"><br>
-    <strong>성창민</strong><br>
-    <span style="color: #2e7d32; font-weight: bold;">백엔드</span><br>
-    Django 기반 REST API, JWT 인증, Celery+Redis 비동기 처리, OpenAI API 연동
-  </div>
-
-  <div style="width: 160px; text-align: center; padding: 16px; background: #e8f5e9; border-radius: 20px;">
-    <img src="src/members/park.jpg" alt="박상엄" style="width: 100px; height: 100px; border-radius: 50%;"><br>
-    <strong>박상엄</strong><br>
-    <span style="color: #2e7d32; font-weight: bold;">프론트엔드</span><br>
-    화면별 API 연동 및 이슈 관리, 데이터셋 구축
-  </div>
-
-  <div style="width: 160px; text-align: center; padding: 16px; background: #e8f5e9; border-radius: 20px;">
-    <img src="src/members/jung.jpg" alt="정하람" style="width: 100px; height: 100px; border-radius: 50%;"><br>
-    <strong>정하람</strong><br>
-    <span style="color: #2e7d32; font-weight: bold;">기획, 인프라</span><br>
-    서비스 기획, AWS EC2, EBS, RDS를 활용한 서버 및 데이터베이스 환경 구성
-  </div>
-
-  <div style="width: 160px; text-align: center; padding: 16px; background: #e8f5e9; border-radius: 20px;">
-    <img src="src/members/chae.jpeg" alt="채주원" style="width: 100px; height: 100px; border-radius: 50%;"><br>
-    <strong>채주원</strong><br>
-    <span style="color: #2e7d32; font-weight: bold;">프론트엔드</span><br>
-    React PWA 기반 UI/UX 설계, 퍼블리싱, Firebase 호스팅 및 Storage 설정
-  </div>
-
-</div>
+|                           <img src="src/members/sung.jpg" width="100"/>                           |              <img src="src/members/park.jpg" width="100"/>              |                            <img src="src/members/jung.jpg" width="100"/>                             |                          <img src="src/members/chae.jpg" width="100"/>                           |
+| :-----------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------: |
+| **성창민**<br>백엔드<br>Django 기반 REST API, JWT 인증, Celery+Redis 비동기 처리, OpenAI API 연동 | **박상엄**<br>프론트엔드<br>화면별 API 연동 및 이슈 관리, 데이터셋 구축 | **정하람**<br>기획, 인프라<br>서비스 기획, AWS EC2, EBS, RDS를 활용한 서버 및 데이터베이스 환경 구성 | **채주원**<br>프론트엔드<br>React PWA 기반 UI/UX 설계, 퍼블리싱, Firebase 호스팅 및 Storage 설정 |
 
 ## 🌐 시스템 구조
 
@@ -139,7 +111,7 @@ GreenDay는 사용자가 일상 속에서 환경 보호를 실천할 수 있도�
     </tr>
     <tr>
       <td style="padding:8px;">팀 커뮤니케이션</td>
-      <td style="padding:8px;"><img src="src/assets/discord-icon.png" width="18" style="vertical-align:middle; margin-right:6px;">Discord</td>
+      <td style="padding:8px;"><img src="src/assets/discord-icon.png" width="18" style="vertical-align:middle; margin-right:6px;"> Discord</td>
     </tr>
   </tbody>
 </table>
