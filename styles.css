@@ -92,19 +92,19 @@ nav a:hover {
 }
 
 #section4 {
-	background-color: #f1f8e9;
+	background-color: #e8f5e9; /* 팀원 소개 */
 }
 
 #section5 {
-	background-color: #e8f5e9;
+	background-color: #f1f8e9; /* 기술 스택 */
 }
 
 #section6 {
-	background-color: #f1f8e9;
+	background-color: #e8f5e9; /* 서비스 아키텍처 */
 }
 
 #section7 {
-	background-color: #e8f5e9;
+	background-color: #f1f8e9; /* 시연 영상 */
 }
 h1,
 h2 {
@@ -379,4 +379,8 @@ li {
 	width: 18px;
 	vertical-align: middle;
 	margin-right: 6px;
+}
+
+.alt-section {
+	background-color: #e0f2f1;
 }
