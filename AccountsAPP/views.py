@@ -22,7 +22,8 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError, PermissionDenied
 from .models import UserQuestAssignment, UserQuestResult, Tip, CommunityPost, Campaign, Comment, PostImage, CommentLike, \
     Report, CampaignParticipant, PostScrap, PostLike, PasswordResetCode, FCMDevice, CustomChallengeQuest, \
-    CustomChallenge, CustomChallengeParticipant, CustomChallengeQuestAssignment, CustomChallengeQuestResult, UserBadge
+    CustomChallenge, CustomChallengeParticipant, CustomChallengeQuestAssignment, CustomChallengeQuestResult, UserBadge, \
+    Quest
 from .pagination import RankingPagination
 from .serializers import UserSignupSerializer, UsernameLoginSerializer, UserQuestAssignmentSerializer, \
     UserQuestResultSerializer, CommunityPostListSerializer, CommunityPostDetailSerializer, CommentSerializer, \
@@ -59,12 +60,18 @@ class FCMDeviceManageView(APIView):
 
 #########################################################
 
-
 class UserSignupView(APIView):
     def post(self, request):
         serializer = UserSignupSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            user = serializer.save()
+            today = date.today()
+            if not UserQuestAssignment.objects.filter(user=user, assigned_date=today).exists():
+                all_quests = list(Quest.objects.all())
+                selected_quests = random.sample(all_quests, k=min(5, len(all_quests)))
+                for quest in selected_quests:
+                    UserQuestAssignment.objects.create(user=user, quest=quest, assigned_date=today)
+
             return Response({'message': '회원가입 완료'}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
