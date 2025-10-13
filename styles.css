@@ -384,3 +384,182 @@ li {
 .alt-section {
 	background-color: #e0f2f1;
 }
+
+/* =================== Responsive & Mobile =================== */
+/* Base: prepare hamburger elements (hidden on desktop) */
+.nav-toggle {
+	display: none;
+}
+.hamburger {
+	display: none;
+	cursor: pointer;
+	width: 32px;
+	height: 24px;
+	position: relative;
+}
+.hamburger span {
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: 3px;
+	background: #fff;
+	border-radius: 2px;
+}
+.hamburger span:nth-child(1) {
+	top: 0;
+}
+.hamburger span:nth-child(2) {
+	top: 50%;
+	transform: translateY(-50%);
+}
+.hamburger span:nth-child(3) {
+	bottom: 0;
+}
+
+/* Tablet and below */
+@media (max-width: 1024px) {
+	nav {
+		gap: 1rem;
+	}
+	.feature-content {
+		gap: 4rem;
+	}
+}
+
+/* Mobile: stack sections, enable hamburger, fluid media */
+@media (max-width: 768px) {
+	header {
+		padding: 0.5rem 1rem;
+	}
+	nav {
+		height: auto;
+		align-items: center;
+	}
+
+	/* Show hamburger */
+	.hamburger {
+		display: block;
+	}
+
+	/* Collapse menu by default */
+	nav ul {
+		position: absolute;
+		top: 50px; /* below header bar */
+		left: 0;
+		right: 0;
+		background: #88d38b;
+		display: none;
+		flex-direction: column;
+		gap: 0;
+		padding: 0.5rem 1rem 1rem;
+		border-top: 1px solid rgba(255, 255, 255, 0.25);
+	}
+	nav ul li {
+		padding: 0.5rem 0;
+	}
+
+	/* Toggle menu when checked */
+	.nav-toggle:checked ~ ul {
+		display: flex;
+	}
+
+	/* Optionally hide GitHub icon on small screens to reduce clutter */
+	.github-link {
+		display: none;
+	}
+
+	/* Page sections */
+	.section {
+		padding: 5rem 1rem 2rem;
+	}
+
+	/* Intro / Install blocks stack */
+	.intro-container,
+	.install-container,
+	.feature-content {
+		flex-direction: column;
+		align-items: center;
+		gap: 1.5rem;
+	}
+	.intro-text,
+	.install-text,
+	.feature-text {
+		text-align: center;
+	}
+
+	.logo-image img,
+	.qr-image img {
+		width: 200px;
+	}
+
+	.feature-image img {
+		width: 100%;
+		max-width: 480px;
+	}
+
+	/* Mobile: in feature sections, always show text ABOVE image */
+	.feature-content,
+	.feature-content:nth-child(even) {
+		flex-direction: column; /* override row-reverse from desktop */
+	}
+	.feature-text {
+		order: 1;
+	}
+	.feature-image {
+		order: 2;
+	}
+
+	/* Video becomes full width 16:9 */
+	.video-wrapper {
+		width: 100%;
+		padding-bottom: 56.25%;
+	}
+
+	/* Team grid: two per row then full width */
+	.team-member {
+		width: 45%;
+	}
+
+	/* Tech table: ensure equal columns and full-width header */
+	.tech-table {
+		table-layout: fixed;
+		width: 100%;
+	}
+	.tech-table th,
+	.tech-table td {
+		width: 50%;
+	}
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+	.intro-text h1 {
+		font-size: 2rem;
+	}
+	.install-text h2 {
+		font-size: 1.8rem;
+	}
+	.feature-text h3 {
+		font-size: 1.6rem;
+	}
+	.intro-text p,
+	.install-text p,
+	.feature-text p {
+		font-size: 1rem;
+	}
+	.team-member {
+		width: 100%;
+	}
+
+	/* Tech table: keep native table layout so header spans edge-to-edge */
+	.tech-table {
+		table-layout: fixed;
+		width: 100%;
+	}
+	.tech-table th,
+	.tech-table td {
+		width: 50%;
+		word-break: keep-all;
+		white-space: normal;
+	}
+}

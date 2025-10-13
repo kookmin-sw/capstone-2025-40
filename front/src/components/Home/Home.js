@@ -255,6 +255,9 @@ const Home = ({customChallengeChanged, setCustomChallengeChanged}) => {
 				} else {
 					alert("5 포인트 적립되었습니다!");
 				}
+				if (isCustomChallenge) {
+					setCustomChallengeChanged((prev) => !prev);
+				}
 			} catch (err) {
 				const detail = err.response?.data?.detail;
 				const reason = err.response?.data?.reason;

@@ -37,6 +37,13 @@ import CircularProgress from "@mui/material/CircularProgress";
 import uploadImage from "../../uploadImage";
 
 const Main = () => {
+	// 날짜를 로컬(KST) 기준 yyyy-mm-dd 형식으로 변환하는 함수
+	const formatDateLocal = (date) => {
+		const year = date.getFullYear();
+		const month = `${date.getMonth() + 1}`.padStart(2, "0");
+		const day = `${date.getDate()}`.padStart(2, "0");
+		return `${year}-${month}-${day}`;
+	};
 	// 커스텀 챌린지 변경 알림 상태
 	const [customChallengeChanged, setCustomChallengeChanged] = useState(false);
 	const navigate = useNavigate();
@@ -465,8 +472,8 @@ const Main = () => {
 								const payload = {
 									title: challengeTitle,
 									description: "",
-									start_date: startDate.toISOString().split("T")[0],
-									end_date: endDate.toISOString().split("T")[0],
+									start_date: formatDateLocal(startDate),
+									end_date: formatDateLocal(endDate),
 									...(badgeImageUrl && {badge_image: badgeImageUrl}),
 									quests: items.map((item) => ({
 										title: item.text,
